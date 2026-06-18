@@ -1,0 +1,85 @@
+name: Selenium E2E and Appium Mobile CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  run-e2e-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+        cache-dependency-path: green-harvest-buddy-main/package-lock.json
+
+    - name: Install Frontend Dependencies
+      run: |
+        cd green-harvest-buddy-main
+        npm ci || npm install
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+        cache-dependency-path: green-harvest-buddy-main/appium-tests/requirements.txt
+
+    - name: Install Python Dependencies
+      run: |
+        cd green-harvest-buddy-main/appium-tests
+        pip install -r requirements.txt
+
+    - name: Start Vite Development Server
+      run: |
+        cd green-harvest-buddy-main
+        # Start Vite on port 3000 in background
+        npm run dev -- --port 3000 &
+        echo "[+] Waiting for Vite server to boot up on port 3000..."
+        for i in {1..30}; do
+          if curl -s http://localhost:3000 > /dev/null; then
+            echo "[+] Vite server is active!"
+            break
+          fi
+          sleep 1
+        done
+      env:
+        PORT: 3000
+
+    - name: Install Selenium Web Test Dependencies
+      run: |
+        cd green-harvest-buddy-main/selenium-tests
+        npm install
+
+    - name: Run Selenium E2E Web Tests
+      run: |
+        cd green-harvest-buddy-main/selenium-tests
+        npm test
+      env:
+        TEST_URL: http://localhost:3000
+        HEADLESS: true
+
+    - name: Run Appium Python Mobile Tests
+      run: |
+        cd green-harvest-buddy-main/appium-tests
+        python tests/e2e_test.py
+      env:
+        TEST_URL: http://localhost:3000
+
+    - name: Upload Test Reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-reports-dashboard
+        path: |
+          green-harvest-buddy-main/selenium-tests/reports/
+          green-harvest-buddy-main/appium-tests/reports/
+        retention-days: 7
