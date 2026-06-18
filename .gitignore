@@ -39,5 +39,3 @@ dist-ssr
 **/reports/screenshots/*.png
 **/__pycache__
 **/*.pyc
-
-app-testing-clone/

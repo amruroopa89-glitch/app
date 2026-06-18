@@ -88,7 +88,7 @@ function RecommendPage() {
         <Text label="Region (district, state)" value={form.region} onChange={(v) => setForm({ ...form, region: v })} placeholder="e.g. Anantapur, Andhra Pradesh" />
         <Text label="Recent crop history" value={form.history} onChange={(v) => setForm({ ...form, history: v })} placeholder="e.g. groundnut, cotton, fallow" />
 
-        <button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold text-primary-foreground shadow-[var(--shadow-soft)] disabled:opacity-60" style={{ background: "var(--gradient-primary)" }}>
+        <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold text-primary-foreground shadow-[var(--shadow-soft)] disabled:opacity-60" style={{ background: "var(--gradient-primary)" }}>
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
           {loading ? "Analyzing soil..." : "Get AI Recommendations"}
         </button>

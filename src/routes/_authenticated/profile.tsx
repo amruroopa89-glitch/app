@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppLayout, PageHeader } from "@/components/AppLayout";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { schemes } from "@/lib/mock-data";
 import { LogOut, Save, FileText, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,15 +14,21 @@ type Profile = {
   full_name: string; age: number | ""; gender: string; mobile: string;
   village: string; district: string; state: string;
   farm_size: number | ""; farm_unit: string; language: string; irrigation_type: string;
+  soil_type: string; soil_ph: number | "";
+  nitrogen: number | ""; phosphorus: number | ""; potassium: number | "";
+  water_availability: string; current_season: string; crop_history: string;
 };
 
 const empty: Profile = {
   full_name: "", age: "", gender: "Male", mobile: "", village: "", district: "", state: "",
   farm_size: "", farm_unit: "acres", language: "English", irrigation_type: "Drip",
+  soil_type: "Loamy", soil_ph: "", nitrogen: "", phosphorus: "", potassium: "",
+  water_availability: "Medium", current_season: "Kharif", crop_history: "",
 };
 
 function ProfilePage() {
   const [p, setP] = useState<Profile>(empty);
+  const [schemes, setSchemes] = useState<Array<{ title: string; body: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
@@ -37,7 +42,19 @@ function ProfilePage() {
           village: data.village ?? "", district: data.district ?? "", state: data.state ?? "",
           farm_size: data.farm_size ?? "", farm_unit: data.farm_unit ?? "acres", language: data.language ?? "English",
           irrigation_type: data.irrigation_type ?? "Drip",
+          soil_type: data.soil_type ?? "Loamy",
+          soil_ph: data.soil_ph ?? "",
+          nitrogen: data.nitrogen ?? "",
+          phosphorus: data.phosphorus ?? "",
+          potassium: data.potassium ?? "",
+          water_availability: data.water_availability ?? "Medium",
+          current_season: data.current_season ?? "Kharif",
+          crop_history: data.crop_history ?? "",
         });
+      }
+      const { data: sch } = await supabase.from("government_schemes").select("title, body").order("title");
+      if (sch) {
+        setSchemes(sch);
       }
       setLoading(false);
     })();
@@ -53,6 +70,10 @@ function ProfilePage() {
       ...p,
       age: p.age === "" ? null : p.age,
       farm_size: p.farm_size === "" ? null : p.farm_size,
+      soil_ph: p.soil_ph === "" ? null : p.soil_ph,
+      nitrogen: p.nitrogen === "" ? null : p.nitrogen,
+      phosphorus: p.phosphorus === "" ? null : p.phosphorus,
+      potassium: p.potassium === "" ? null : p.potassium,
       updated_at: new Date().toISOString(),
     };
     const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "user_id" });
@@ -125,6 +146,19 @@ function ProfilePage() {
             <SelectField label="Unit" value={p.farm_unit} options={["acres","hectares"]} onChange={(v) => setP({ ...p, farm_unit: v })} />
             <SelectField label="Irrigation" value={p.irrigation_type} options={["Drip","Sprinkler","Flood","Rain-fed","Canal"]} onChange={(v) => setP({ ...p, irrigation_type: v })} />
             <SelectField label="Language" value={p.language} options={["English","Hindi","Telugu","Tamil","Kannada","Marathi","Bengali","Gujarati"]} onChange={(v) => setP({ ...p, language: v })} />
+          </Grid>
+        </Card>
+
+        <Card title="🌱 Soil & Crop Values">
+          <Grid>
+            <SelectField label="Soil Type" value={p.soil_type} options={["Black", "Red", "Sandy", "Clay", "Loamy"]} onChange={(v) => setP({ ...p, soil_type: v })} />
+            <NumField label="Soil pH" value={p.soil_ph} onChange={(v) => setP({ ...p, soil_ph: v })} step={0.1} />
+            <NumField label="Nitrogen (N)" value={p.nitrogen} onChange={(v) => setP({ ...p, nitrogen: v })} />
+            <NumField label="Phosphorus (P)" value={p.phosphorus} onChange={(v) => setP({ ...p, phosphorus: v })} />
+            <NumField label="Potassium (K)" value={p.potassium} onChange={(v) => setP({ ...p, potassium: v })} />
+            <SelectField label="Water availability" value={p.water_availability} options={["Low","Medium","High"]} onChange={(v) => setP({ ...p, water_availability: v })} />
+            <SelectField label="Current season" value={p.current_season} options={["Kharif","Rabi","Zaid","Summer"]} onChange={(v) => setP({ ...p, current_season: v })} />
+            <Field label="Crop history" value={p.crop_history} onChange={(v) => setP({ ...p, crop_history: v })} />
           </Grid>
         </Card>
 

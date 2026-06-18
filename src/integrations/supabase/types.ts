@@ -92,6 +92,84 @@ export type Database = {
         }
         Relationships: []
       }
+      crop_alerts: {
+        Row: {
+          id: string
+          icon: string
+          title: string
+          body: string
+          state: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          icon?: string
+          title: string
+          body: string
+          state?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          icon?: string
+          title?: string
+          body?: string
+          state?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      mandi_prices: {
+        Row: {
+          id: string
+          crop: string
+          price_inr: number
+          unit: string
+          change_pct: number
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          crop: string
+          price_inr: number
+          unit?: string
+          change_pct?: number
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          crop?: string
+          price_inr?: number
+          unit?: string
+          change_pct?: number
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      government_schemes: {
+        Row: {
+          id: string
+          title: string
+          body: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          body: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          body?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
