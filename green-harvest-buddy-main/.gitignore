@@ -33,7 +33,6 @@ dist-ssr
 
 # Test outputs and modules
 **/node_modules
-**/reports/*.xlsx
 **/reports/screenshots/*.png
 **/__pycache__
 **/*.pyc
