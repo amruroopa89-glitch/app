@@ -1,0 +1,15 @@
+{
+  "appId": "com.green.harvestbuddy",
+  "appName": "Green Harvest Buddy",
+  "webDir": "dist/mobile",
+  "bundledWebRuntime": false,
+  "server": {
+    "cleartext": true,
+    "androidScheme": "https"
+  },
+  "android": {
+    "buildOptions": {
+      "releaseType": "APK"
+    }
+  }
+}
