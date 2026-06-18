@@ -18,7 +18,7 @@ APPIUM_SERVER_URL = (
 
 # ── Target Web App URL ──────────────────────────────────────────────────────
 # 10.0.2.2 = localhost from inside Android emulator
-TARGET_URL = os.getenv("TEST_URL", "http://10.0.2.2:3000")
+TARGET_URL = os.getenv("TEST_URL", "http://10.0.2.2:8080")
 
 # ── Appium capabilities ─────────────────────────────────────────────────────
 capabilities = {

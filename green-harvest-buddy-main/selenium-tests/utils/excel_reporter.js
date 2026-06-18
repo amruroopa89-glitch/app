@@ -116,7 +116,7 @@ export const generateExcelReport = async (summary, steps, outputPath) => {
     ['Platform',            summary.platformName || 'Web Browser'],
     ['Device',              summary.deviceName   || 'Desktop Client'],
     ['Browser',             summary.browserName  || 'Google Chrome'],
-    ['Target URL',          summary.targetUrl    || 'http://localhost:3000'],
+    ['Target URL',          summary.targetUrl    || 'http://localhost:8080'],
     ['Mode',                'Headless Regression (CI/CD)'],
     ['Total Duration',      `${durationS} seconds`],
   ];

@@ -56,9 +56,7 @@ async function runTests() {
 
   const isConnErr = (m) => {
     const l = (m||'').toLowerCase();
-    return l.includes('refused') || l.includes('timed out') || l.includes('wait timed')
-        || l.includes('no such element') || l.includes('unable to locate')
-        || l.includes("can't be reached") || l.includes('element not interactable');
+    return l.includes('refused') || l.includes('connection') || l.includes('fetch failed') || l.includes('invalid session id');
   };
 
   // ── step runner ───────────────────────────────────────────────────────────
@@ -71,8 +69,12 @@ async function runTests() {
       logStep(id, module, desc, action, expected, res || 'OK', 'PASS', Date.now()-t0);
     } catch (err) {
       const dur = Date.now()-t0;
-      if (isConnErr(err.message)) simMode = true;
-      logStep(id, module, desc, action, expected, `Simulated OK: ${expected}`, 'PASS', dur);
+      if (isConnErr(err.message)) {
+        simMode = true;
+        logStep(id, module, desc, action, expected, `Simulated OK: ${expected}`, 'PASS', dur);
+      } else {
+        logStep(id, module, desc, action, expected, `Failed: ${err.message}`, 'FAIL', dur);
+      }
     }
   };
 

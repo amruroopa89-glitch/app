@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
 
-export const TARGET_URL = process.env.TEST_URL || 'http://localhost:3000';
+export const TARGET_URL = process.env.TEST_URL || 'http://localhost:8080';
 export const HEADLESS   = process.env.HEADLESS !== 'false'; // default true (CI-friendly)
 
 export const TIMEOUTS = {

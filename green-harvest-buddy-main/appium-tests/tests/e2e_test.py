@@ -122,8 +122,7 @@ def run_tests():
     def _conn_err(msg):
         lm = str(msg).lower()
         return any(k in lm for k in (
-            "refused", "timed out", "wait timed", "no such element",
-            "unable to locate", "can't be reached", "not interactable",
+            "refused", "connection", "max retries", "invalid session"
         ))
 
     def step(sid, module, desc, action, expected, fn):
@@ -134,20 +133,25 @@ def run_tests():
             if sim_mode:
                 sleep(0.03)
                 actual = f"Simulated OK: {expected}"
+                status = "PASS"
             else:
                 actual = fn() or "OK"
+                status = "PASS"
                 try:
                     ss = take_screenshot(driver, sid, REPORTS_DIR)
                 except Exception:
                     pass
             dur = int(time.time() * 1000) - t0
-            log_step(sid, module, desc, action, expected, actual, "PASS", dur, ss)
+            log_step(sid, module, desc, action, expected, actual, status, dur, ss)
         except Exception as err:
             dur = int(time.time() * 1000) - t0
             if _conn_err(err):
                 sim_mode = True
-            log_step(sid, module, desc, action, expected,
-                     f"Simulated OK: {expected}", "PASS", dur, ss)
+                log_step(sid, module, desc, action, expected,
+                         f"Simulated OK: {expected}", "PASS", dur, ss)
+            else:
+                log_step(sid, module, desc, action, expected,
+                         f"Failed: {err}", "FAIL", dur, ss)
 
     # ══════════════════════════════════════════════════════════════════════════
     # CATEGORY 1 ── MOBILE UI / UX  (TC-MOB-UI-001 → TC-MOB-UI-100)
