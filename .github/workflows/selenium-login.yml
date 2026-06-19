@@ -7,16 +7,20 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
     inputs:
-      limit_100:
-        description: 'Limit to run only 100 test cases (Unit tests only)'
-        type: boolean
+      test_count:
+        description: 'Number of test cases to run (100, 300, or 400)'
+        type: choice
         required: false
-        default: false
+        default: '400'
+        options:
+          - '100'
+          - '300'
+          - '400'
 
 env:
   VITE_SUPABASE_URL: "https://agvxymhumrrrwstfyuvk.supabase.co"
   VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_hsYnQuuXXTZulmg2AG67SQ_NogYXAkQ"
-  LIMIT_100: ${{ github.event.inputs.limit_100 || 'false' }}
+  TEST_COUNT: ${{ github.event.inputs.test_count || '400' }}
 
 jobs:
   selenium-tests:
@@ -65,7 +69,7 @@ jobs:
       env:
         TEST_URL: http://localhost:3000
         HEADLESS: true
-        LIMIT_100: ${{ env.LIMIT_100 }}
+        TEST_COUNT: ${{ env.TEST_COUNT }}
 
     - name: Upload Selenium Test Reports
       uses: actions/upload-artifact@v4
@@ -127,7 +131,7 @@ jobs:
         python tests/e2e_test.py
       env:
         TEST_URL: http://localhost:3000
-        LIMIT_100: ${{ env.LIMIT_100 }}
+        TEST_COUNT: ${{ env.TEST_COUNT }}
 
     - name: Upload Appium Test Reports
       uses: actions/upload-artifact@v4
@@ -249,19 +253,35 @@ jobs:
         </html>
         EOF
 
+    - name: Check if GitHub Pages is enabled
+      id: check_pages
+      run: |
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/pages")
+        echo "Pages status: $HTTP_STATUS"
+        if [ "$HTTP_STATUS" = "200" ]; then
+          echo "enabled=true" >> $GITHUB_OUTPUT
+        else
+          echo "enabled=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Setup Pages
+      if: steps.check_pages.outputs.enabled == 'true'
       uses: actions/configure-pages@v4
       with:
         enablement: true
       continue-on-error: true
 
     - name: Upload Pages Artifact
+      if: steps.check_pages.outputs.enabled == 'true'
       uses: actions/upload-pages-artifact@v3
       with:
         path: public-reports
       continue-on-error: true
 
     - name: Deploy to GitHub Pages
+      if: steps.check_pages.outputs.enabled == 'true'
       id: deployment
       uses: actions/deploy-pages@v4
       continue-on-error: true
@@ -300,11 +320,7 @@ jobs:
             count=$(ls reports/selenium/*.xlsx 2>/dev/null | wc -l)
             if [ "$count" -gt 0 ]; then
                 selenium_status="✅ PASSED"
-                if [ "${{ env.LIMIT_100 }}" = "true" ]; then
-                    selenium_cases="100"
-                else
-                    selenium_cases="400"
-                fi
+                selenium_cases="${{ env.TEST_COUNT }}"
             fi
         fi
         echo "| 🌐 Web (Selenium) | Selenium E2E Web + API Tests | $selenium_cases | $selenium_status |" >> $GITHUB_STEP_SUMMARY
@@ -316,11 +332,7 @@ jobs:
             count=$(ls reports/appium/*.xlsx 2>/dev/null | wc -l)
             if [ "$count" -gt 0 ]; then
                 appium_status="✅ PASSED"
-                if [ "${{ env.LIMIT_100 }}" = "true" ]; then
-                    appium_cases="100"
-                else
-                    appium_cases="400"
-                fi
+                appium_cases="${{ env.TEST_COUNT }}"
             fi
         fi
         echo "| 📱 Mobile (Appium) | Appium Mobile Tests Dry-Run | $appium_cases | $appium_status |" >> $GITHUB_STEP_SUMMARY
