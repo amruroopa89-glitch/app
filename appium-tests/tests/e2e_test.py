@@ -25,13 +25,20 @@ def run_all():
     configure_sdk_and_appium()
     
     try:
-        # 2. Run each category sequentially
-        ui_res   = run_category("UI-UX Tests", run_ui_tests)
-        func_res = run_category("Functional Tests", run_functional_tests)
-        unit_res = run_category("Unit Tests", run_unit_tests)
-        val_res  = run_category("Validation Tests", run_validation_tests)
+        limit_100 = os.environ.get("LIMIT_100") == "true"
+        all_results = []
         
-        all_results = [ui_res, func_res, unit_res, val_res]
+        if limit_100:
+            print("[+] LIMIT_100=true: Running exactly 100 cases (Unit/Component Tests only)...")
+            unit_res = run_category("Unit Tests", run_unit_tests)
+            all_results.append(unit_res)
+        else:
+            # 2. Run each category sequentially
+            ui_res   = run_category("UI-UX Tests", run_ui_tests)
+            func_res = run_category("Functional Tests", run_functional_tests)
+            unit_res = run_category("Unit Tests", run_unit_tests)
+            val_res  = run_category("Validation Tests", run_validation_tests)
+            all_results.extend([ui_res, func_res, unit_res, val_res])
         
         # 3. Aggregate all results into the final Excel report
         generate_combined_report(all_results)

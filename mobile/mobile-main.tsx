@@ -16,7 +16,7 @@ const hashHistory = createHashHistory();
 const router = createRouter({
   routeTree,
   history: hashHistory,
-  context: {},
+  context: { queryClient },
 });
 
 declare module "@tanstack/react-router" {
