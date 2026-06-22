@@ -385,36 +385,42 @@ jobs:
         with:
           name: selenium-web-report
           path: reports-download/selenium-web-report
+        continue-on-error: true
 
       - name: Download appium-android-report
         uses: actions/download-artifact@v4
         with:
           name: appium-android-report
           path: reports-download/appium-android-report
+        continue-on-error: true
 
       - name: Download unit-test-report
         uses: actions/download-artifact@v4
         with:
           name: unit-test-report
           path: reports-download/unit-test-report
+        continue-on-error: true
 
       - name: Download validation-test-report
         uses: actions/download-artifact@v4
         with:
           name: validation-test-report
           path: reports-download/validation-test-report
+        continue-on-error: true
 
       - name: Download deployment-test-report
         uses: actions/download-artifact@v4
         with:
           name: deployment-test-report
           path: reports-download/deployment-test-report
+        continue-on-error: true
 
       - name: Download load-test-report
         uses: actions/download-artifact@v4
         with:
           name: load-test-report
           path: reports-download/load-test-report
+        continue-on-error: true
 
       - name: Run E2E Compiler
         run: |
@@ -427,11 +433,13 @@ jobs:
             ../reports-download/validation-test-report/validation-test-report.xlsx \
             ../reports-download/deployment-test-report/deployment-test-report.xlsx \
             ../reports-download/load-test-report/load-test-report.xlsx
+        continue-on-error: true
 
       - name: Prepare full-e2e-report Artifact
         run: |
           mkdir -p full-e2e-report
-          cp selenium-tests/reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx full-e2e-report/
+          [ -f selenium-tests/reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx ] && cp selenium-tests/reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx full-e2e-report/ || echo "Consolidated report missing, skipping copy"
+        continue-on-error: true
 
       - name: Upload Consolidated E2E Report
         uses: actions/upload-artifact@v4
@@ -439,19 +447,20 @@ jobs:
           name: full-e2e-report
           path: full-e2e-report/
           retention-days: 14
+        continue-on-error: true
 
       - name: Generate Dashboard Landing Page
         run: |
           mkdir -p public-reports
           
-          # Copy spreadsheets for browser download
-          cp selenium-tests/reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx public-reports/
-          cp reports-download/selenium-web-report/selenium-web-report.xlsx public-reports/
-          cp reports-download/appium-android-report/appium-android-report.xlsx public-reports/
-          cp reports-download/unit-test-report/unit-test-report.xlsx public-reports/
-          cp reports-download/validation-test-report/validation-test-report.xlsx public-reports/
-          cp reports-download/deployment-test-report/deployment-test-report.xlsx public-reports/
-          cp reports-download/load-test-report/load-test-report.xlsx public-reports/
+          # Copy spreadsheets for browser download with safety checks
+          [ -f selenium-tests/reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx ] && cp selenium-tests/reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx public-reports/ || echo "FINAL report missing"
+          [ -f reports-download/selenium-web-report/selenium-web-report.xlsx ] && cp reports-download/selenium-web-report/selenium-web-report.xlsx public-reports/ || echo "selenium-web-report missing"
+          [ -f reports-download/appium-android-report/appium-android-report.xlsx ] && cp reports-download/appium-android-report/appium-android-report.xlsx public-reports/ || echo "appium-android-report missing"
+          [ -f reports-download/unit-test-report/unit-test-report.xlsx ] && cp reports-download/unit-test-report/unit-test-report.xlsx public-reports/ || echo "unit-test-report missing"
+          [ -f reports-download/validation-test-report/validation-test-report.xlsx ] && cp reports-download/validation-test-report/validation-test-report.xlsx public-reports/ || echo "validation-test-report missing"
+          [ -f reports-download/deployment-test-report/deployment-test-report.xlsx ] && cp reports-download/deployment-test-report/deployment-test-report.xlsx public-reports/ || echo "deployment-test-report missing"
+          [ -f reports-download/load-test-report/load-test-report.xlsx ] && cp reports-download/load-test-report/load-test-report.xlsx public-reports/ || echo "load-test-report missing"
           
           cat << 'EOF' > public-reports/index.html
           <!DOCTYPE html>
@@ -710,14 +719,35 @@ jobs:
           </html>
           EOF
 
+      - name: Check if GitHub Pages is enabled
+        id: check_pages
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pages")
+          echo "Pages status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
       - name: Setup Pages
+        if: steps.check_pages.outputs.enabled == 'true'
         uses: actions/configure-pages@v4
+        continue-on-error: true
 
       - name: Upload Pages Artifact
+        if: steps.check_pages.outputs.enabled == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: public-reports
+        continue-on-error: true
 
       - name: Deploy to GitHub Pages
+        if: steps.check_pages.outputs.enabled == 'true'
         id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
