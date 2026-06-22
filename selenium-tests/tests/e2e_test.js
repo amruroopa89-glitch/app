@@ -14,14 +14,23 @@ import { runValidationTests } from './test_validation.js';
 async function runAll() {
   console.log('[+] Starting Green Harvest Buddy E2E Test Suite (Modular)...');
   
-  const limit100 = process.env.LIMIT_100 === 'true';
+  const testCount = process.env.TEST_COUNT || '400';
   const allResults = [];
 
-  if (limit100) {
-    console.log('[+] LIMIT_100=true: Running exactly 100 cases (Unit/Component Tests only)...');
+  console.log(`[+] TEST_COUNT=${testCount}: Configuring test categories...`);
+
+  if (testCount === '100') {
+    console.log('[+] Running exactly 100 cases (Unit/Component Tests only)...');
     const unitResult = await runCategory('Unit Tests', runUnitTests);
     allResults.push(unitResult);
+  } else if (testCount === '300') {
+    console.log('[+] Running exactly 300 cases (UI, Functional, and Unit Tests)...');
+    const uiResult = await runCategory('UI-UX Tests', runUITests);
+    const funcResult = await runCategory('Functional Tests', runFunctionalTests);
+    const unitResult = await runCategory('Unit Tests', runUnitTests);
+    allResults.push(uiResult, funcResult, unitResult);
   } else {
+    console.log('[+] Running all 400 cases...');
     const uiResult = await runCategory('UI-UX Tests', runUITests);
     const funcResult = await runCategory('Functional Tests', runFunctionalTests);
     const unitResult = await runCategory('Unit Tests', runUnitTests);

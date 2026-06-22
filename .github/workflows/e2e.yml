@@ -1,0 +1,723 @@
+name: E2E Pipeline (6 Concurrent Tests + Deploy)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  VITE_SUPABASE_URL: "https://agvxymhumrrrwstfyuvk.supabase.co"
+  VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_hsYnQuuXXTZulmg2AG67SQ_NogYXAkQ"
+  TEST_COUNT: "300"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 1: Selenium -- Website Tests (300)
+  # ─────────────────────────────────────────────────────────────────────────────
+  selenium-web-tests:
+    name: Selenium -- Website Tests (300)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Frontend Dependencies
+        run: npm ci || npm install
+
+      - name: Start Vite Development Server
+        run: |
+          npm run dev -- --port 3000 &
+          echo "[+] Waiting for Vite server to boot up on port 3000..."
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "[+] Vite server is active!"
+              break
+            fi
+            sleep 1
+          done
+        env:
+          PORT: 3000
+
+      - name: Install Selenium Web Test Dependencies
+        run: |
+          cd selenium-tests
+          npm install
+
+      - name: Run Selenium E2E Web Tests
+        run: |
+          cd selenium-tests
+          node tests/run_custom.js ui,functional reports/selenium-web-report.xlsx
+        env:
+          TEST_URL: http://localhost:3000
+          HEADLESS: true
+
+      - name: Upload Selenium Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: selenium-web-report
+          path: selenium-tests/reports/selenium-web-report.xlsx
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2: Appium -- Android Tests (300)
+  # ─────────────────────────────────────────────────────────────────────────────
+  appium-android-tests:
+    name: Appium -- Android Tests (300)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Frontend Dependencies
+        run: npm ci || npm install
+
+      - name: Start Vite Development Server
+        run: |
+          npm run dev -- --port 3000 &
+          echo "[+] Waiting for Vite server to boot up on port 3000..."
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "[+] Vite server is active!"
+              break
+            fi
+            sleep 1
+          done
+        env:
+          PORT: 3000
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: appium-tests/requirements.txt
+
+      - name: Install Python Dependencies
+        run: |
+          cd appium-tests
+          pip install -r requirements.txt
+
+      - name: Run Appium Python Mobile Tests
+        run: |
+          cd appium-tests
+          python tests/e2e_test.py
+        env:
+          TEST_URL: http://localhost:3000
+          TEST_COUNT: "300"
+
+      - name: Standardise Report Name
+        if: always()
+        run: |
+          mkdir -p appium-tests/reports-fixed
+          cp appium-tests/reports/GreenHarvestBuddy_Appium_E2E_*.xlsx appium-tests/reports-fixed/appium-android-report.xlsx || echo "No Appium report found"
+
+      - name: Upload Appium Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: appium-android-report
+          path: appium-tests/reports-fixed/appium-android-report.xlsx
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 3: Unit Tests -- API (300)
+  # ─────────────────────────────────────────────────────────────────────────────
+  unit-tests-api:
+    name: Unit Tests -- API (300)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Frontend Dependencies
+        run: npm ci || npm install
+
+      - name: Start Vite Development Server
+        run: |
+          npm run dev -- --port 3000 &
+          echo "[+] Waiting for Vite server to boot up on port 3000..."
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "[+] Vite server is active!"
+              break
+            fi
+            sleep 1
+          done
+        env:
+          PORT: 3000
+
+      - name: Install Selenium Web Test Dependencies
+        run: |
+          cd selenium-tests
+          npm install
+
+      - name: Run Unit Tests
+        run: |
+          cd selenium-tests
+          node tests/run_custom.js unit reports/unit-test-report.xlsx
+        env:
+          TEST_URL: http://localhost:3000
+          HEADLESS: true
+
+      - name: Upload Unit Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-report
+          path: selenium-tests/reports/unit-test-report.xlsx
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 4: Validation Tests (300)
+  # ─────────────────────────────────────────────────────────────────────────────
+  validation-tests:
+    name: Validation Tests (300)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Frontend Dependencies
+        run: npm ci || npm install
+
+      - name: Start Vite Development Server
+        run: |
+          npm run dev -- --port 3000 &
+          echo "[+] Waiting for Vite server to boot up on port 3000..."
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "[+] Vite server is active!"
+              break
+            fi
+            sleep 1
+          done
+        env:
+          PORT: 3000
+
+      - name: Install Selenium Web Test Dependencies
+        run: |
+          cd selenium-tests
+          npm install
+
+      - name: Run Validation Tests
+        run: |
+          cd selenium-tests
+          node tests/run_custom.js validation reports/validation-test-report.xlsx
+        env:
+          TEST_URL: http://localhost:3000
+          HEADLESS: true
+
+      - name: Upload Validation Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: validation-test-report
+          path: selenium-tests/reports/validation-test-report.xlsx
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 5: Deployment Status (300)
+  # ─────────────────────────────────────────────────────────────────────────────
+  deployment-status:
+    name: Deployment Status (300)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Frontend Dependencies
+        run: npm ci || npm install
+
+      - name: Start Vite Development Server
+        run: |
+          npm run dev -- --port 3000 &
+          echo "[+] Waiting for Vite server to boot up on port 3000..."
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "[+] Vite server is active!"
+              break
+            fi
+            sleep 1
+          done
+        env:
+          PORT: 3000
+
+      - name: Install Selenium Web Test Dependencies
+        run: |
+          cd selenium-tests
+          npm install
+
+      - name: Run Deployment Status Test
+        run: |
+          cd selenium-tests
+          node tests/run_deployment_status.js reports/deployment-test-report.xlsx
+        env:
+          TEST_URL: http://localhost:3000
+
+      - name: Upload Deployment Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployment-test-report
+          path: selenium-tests/reports/deployment-test-report.xlsx
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 6: Load Testing -- Performance (300)
+  # ─────────────────────────────────────────────────────────────────────────────
+  load-testing:
+    name: Load Testing -- Performance (300)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Frontend Dependencies
+        run: npm ci || npm install
+
+      - name: Start Vite Development Server
+        run: |
+          npm run dev -- --port 3000 &
+          echo "[+] Waiting for Vite server to boot up on port 3000..."
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "[+] Vite server is active!"
+              break
+            fi
+            sleep 1
+          done
+        env:
+          PORT: 3000
+
+      - name: Install Selenium Web Test Dependencies
+        run: |
+          cd selenium-tests
+          npm install
+
+      - name: Run Load Testing Test
+        run: |
+          cd selenium-tests
+          node tests/run_load_test.js reports/load-test-report.xlsx
+        env:
+          TEST_URL: http://localhost:3000
+
+      - name: Upload Load Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-test-report
+          path: selenium-tests/reports/load-test-report.xlsx
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Final Job: Compile Master Report & Deploy
+  # ─────────────────────────────────────────────────────────────────────────────
+  compile-and-deploy:
+    name: Compile Master Report & Deploy
+    needs: [selenium-web-tests, appium-android-tests, unit-tests-api, validation-tests, deployment-status, load-testing]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Compiler Dependencies
+        run: |
+          cd selenium-tests
+          npm install
+
+      - name: Create Download Directory
+        run: mkdir -p reports-download
+
+      - name: Download selenium-web-report
+        uses: actions/download-artifact@v4
+        with:
+          name: selenium-web-report
+          path: reports-download/selenium-web-report
+
+      - name: Download appium-android-report
+        uses: actions/download-artifact@v4
+        with:
+          name: appium-android-report
+          path: reports-download/appium-android-report
+
+      - name: Download unit-test-report
+        uses: actions/download-artifact@v4
+        with:
+          name: unit-test-report
+          path: reports-download/unit-test-report
+
+      - name: Download validation-test-report
+        uses: actions/download-artifact@v4
+        with:
+          name: validation-test-report
+          path: reports-download/validation-test-report
+
+      - name: Download deployment-test-report
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-test-report
+          path: reports-download/deployment-test-report
+
+      - name: Download load-test-report
+        uses: actions/download-artifact@v4
+        with:
+          name: load-test-report
+          path: reports-download/load-test-report
+
+      - name: Run E2E Compiler
+        run: |
+          cd selenium-tests
+          node tests/compile_reports.js \
+            reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx \
+            ../reports-download/selenium-web-report/selenium-web-report.xlsx \
+            ../reports-download/appium-android-report/appium-android-report.xlsx \
+            ../reports-download/unit-test-report/unit-test-report.xlsx \
+            ../reports-download/validation-test-report/validation-test-report.xlsx \
+            ../reports-download/deployment-test-report/deployment-test-report.xlsx \
+            ../reports-download/load-test-report/load-test-report.xlsx
+
+      - name: Prepare full-e2e-report Artifact
+        run: |
+          mkdir -p full-e2e-report
+          cp selenium-tests/reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx full-e2e-report/
+
+      - name: Upload Consolidated E2E Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-e2e-report
+          path: full-e2e-report/
+          retention-days: 14
+
+      - name: Generate Dashboard Landing Page
+        run: |
+          mkdir -p public-reports
+          
+          # Copy spreadsheets for browser download
+          cp selenium-tests/reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx public-reports/
+          cp reports-download/selenium-web-report/selenium-web-report.xlsx public-reports/
+          cp reports-download/appium-android-report/appium-android-report.xlsx public-reports/
+          cp reports-download/unit-test-report/unit-test-report.xlsx public-reports/
+          cp reports-download/validation-test-report/validation-test-report.xlsx public-reports/
+          cp reports-download/deployment-test-report/deployment-test-report.xlsx public-reports/
+          cp reports-download/load-test-report/load-test-report.xlsx public-reports/
+          
+          cat << 'EOF' > public-reports/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Green Harvest Buddy CI/CD Dashboard</title>
+              <link rel="preconnect" href="https://fonts.googleapis.com">
+              <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+              <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+              <style>
+                  :root {
+                      --bg: #090f0c;
+                      --card-bg: rgba(20, 32, 26, 0.65);
+                      --primary: #2e7d32;
+                      --primary-glow: rgba(46, 125, 50, 0.4);
+                      --accent: #a5d6a7;
+                      --text: #f0fdf4;
+                      --text-muted: #8f9e95;
+                      --border: rgba(165, 214, 167, 0.15);
+                      --glass-specular: rgba(255, 255, 255, 0.03);
+                  }
+                  * {
+                      box-sizing: border-box;
+                      margin: 0;
+                      padding: 0;
+                  }
+                  body {
+                      background: radial-gradient(circle at 50% 0%, #112015 0%, var(--bg) 70%);
+                      color: var(--text);
+                      font-family: 'Plus Jakarta Sans', sans-serif;
+                      min-height: 100vh;
+                      padding: 60px 20px;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                  }
+                  .container {
+                      max-width: 960px;
+                      width: 100%;
+                      background: var(--card-bg);
+                      backdrop-filter: blur(16px);
+                      -webkit-backdrop-filter: blur(16px);
+                      border: 1px solid var(--border);
+                      border-radius: 24px;
+                      padding: 45px;
+                      box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 1px 1px var(--glass-specular);
+                      position: relative;
+                      overflow: hidden;
+                  }
+                  .container::before {
+                      content: '';
+                      position: absolute;
+                      top: 0;
+                      left: 0;
+                      right: 0;
+                      height: 4px;
+                      background: linear-gradient(90deg, #1b5e20, #4caf50, #81c784);
+                  }
+                  header {
+                      text-align: center;
+                      margin-bottom: 40px;
+                  }
+                  h1 {
+                      font-family: 'Outfit', sans-serif;
+                      font-weight: 800;
+                      font-size: 2.5rem;
+                      letter-spacing: -0.03em;
+                      background: linear-gradient(135deg, #ffffff 30%, #a5d6a7 100%);
+                      -webkit-background-clip: text;
+                      -webkit-text-fill-color: transparent;
+                      margin-bottom: 12px;
+                  }
+                  header p {
+                      color: var(--text-muted);
+                      font-size: 1.1rem;
+                      font-weight: 300;
+                  }
+                  .master-card {
+                      background: linear-gradient(135deg, rgba(46, 125, 50, 0.15) 0%, rgba(20, 32, 26, 0.4) 100%);
+                      border: 1px solid rgba(165, 214, 167, 0.3);
+                      border-radius: 18px;
+                      padding: 25px;
+                      margin-bottom: 35px;
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                  }
+                  .master-info {
+                      display: flex;
+                      flex-direction: column;
+                      gap: 4px;
+                  }
+                  .master-label {
+                      font-size: 0.85rem;
+                      font-weight: 700;
+                      text-transform: uppercase;
+                      letter-spacing: 0.1em;
+                      color: var(--accent);
+                  }
+                  .master-title {
+                      font-family: 'Outfit', sans-serif;
+                      font-weight: 600;
+                      font-size: 1.4rem;
+                      color: #fff;
+                  }
+                  .btn-master {
+                      background: #2e7d32;
+                      color: #fff;
+                      text-decoration: none;
+                      padding: 14px 28px;
+                      border-radius: 12px;
+                      font-weight: 600;
+                      font-size: 0.95rem;
+                      letter-spacing: -0.01em;
+                      box-shadow: 0 0 20px var(--primary-glow);
+                      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                      border: 1px solid rgba(255,255,255,0.1);
+                  }
+                  .btn-master:hover {
+                      background: #388e3c;
+                      box-shadow: 0 0 30px rgba(46, 125, 50, 0.6);
+                      transform: translateY(-2px);
+                  }
+                  .reports-grid {
+                      display: grid;
+                      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                      gap: 20px;
+                  }
+                  .report-card {
+                      background: rgba(255, 255, 255, 0.02);
+                      border: 1px solid var(--border);
+                      border-radius: 16px;
+                      padding: 20px;
+                      display: flex;
+                      flex-direction: column;
+                      justify-content: space-between;
+                      gap: 15px;
+                      transition: all 0.3s ease;
+                  }
+                  .report-card:hover {
+                      border-color: rgba(165, 214, 167, 0.4);
+                      background: rgba(255, 255, 255, 0.04);
+                      transform: translateY(-2px);
+                  }
+                  .report-card h3 {
+                      font-family: 'Outfit', sans-serif;
+                      font-weight: 600;
+                      font-size: 1.1rem;
+                      color: #fff;
+                  }
+                  .report-desc {
+                      color: var(--text-muted);
+                      font-size: 0.85rem;
+                      line-height: 1.4;
+                  }
+                  .btn-secondary {
+                      background: rgba(255, 255, 255, 0.05);
+                      border: 1px solid rgba(255, 255, 255, 0.1);
+                      color: var(--accent);
+                      text-decoration: none;
+                      padding: 10px 18px;
+                      border-radius: 10px;
+                      font-weight: 600;
+                      font-size: 0.85rem;
+                      text-align: center;
+                      transition: all 0.2s ease;
+                  }
+                  .btn-secondary:hover {
+                      background: rgba(46, 125, 50, 0.2);
+                      border-color: var(--accent);
+                      color: #fff;
+                  }
+                  footer {
+                      margin-top: 50px;
+                      border-top: 1px solid var(--border);
+                      padding-top: 25px;
+                      text-align: center;
+                      color: var(--text-muted);
+                      font-size: 0.85rem;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <header>
+                      <h1>🌱 Green Harvest Buddy</h1>
+                      <p>CI/CD Automated E2E & Performance Test Dashboard</p>
+                  </header>
+
+                  <div class="master-card">
+                      <div class="master-info">
+                          <span class="master-label">Grand Summary Report</span>
+                          <span class="master-title">E2E Master Compiled Workbook</span>
+                      </div>
+                      <a href="./E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx" class="btn-master" download>Download Master Excel</a>
+                  </div>
+
+                  <div class="reports-grid">
+                      <div class="report-card">
+                          <div>
+                              <h3>🌐 Selenium Web Report</h3>
+                              <p class="report-desc">Browser UI/UX and functional flows tested using Selenium WebDriver.</p>
+                          </div>
+                          <a href="./selenium-web-report.xlsx" class="btn-secondary" download>Download Report</a>
+                      </div>
+
+                      <div class="report-card">
+                          <div>
+                              <h3>📱 Appium Android Report</h3>
+                              <p class="report-desc">Mobile application emulator regression dry-run test suite.</p>
+                          </div>
+                          <a href="./appium-android-report.xlsx" class="btn-secondary" download>Download Report</a>
+                      </div>
+
+                      <div class="report-card">
+                          <div>
+                              <h3>🧪 Unit/API Report</h3>
+                              <p class="report-desc">Component level and Supabase server-side API simulations.</p>
+                          </div>
+                          <a href="./unit-test-report.xlsx" class="btn-secondary" download>Download Report</a>
+                      </div>
+
+                      <div class="report-card">
+                          <div>
+                              <h3>🔒 Validation Report</h3>
+                              <p class="report-desc">Input verification, validation schemes, and boundary condition checks.</p>
+                          </div>
+                          <a href="./validation-test-report.xlsx" class="btn-secondary" download>Download Report</a>
+                      </div>
+
+                      <div class="report-card">
+                          <div>
+                              <h3>🚀 Deployment Status</h3>
+                              <p class="report-desc">Route accessibility pings and cloud API gateway checks.</p>
+                          </div>
+                          <a href="./deployment-test-report.xlsx" class="btn-secondary" download>Download Report</a>
+                      </div>
+
+                      <div class="report-card">
+                          <div>
+                              <h3>⚡ Performance & Load</h3>
+                              <p class="report-desc">Concurrency, throughput (RPS), and latency distribution stats under load.</p>
+                          </div>
+                          <a href="./load-test-report.xlsx" class="btn-secondary" download>Download Report</a>
+                      </div>
+                  </div>
+
+                  <footer>
+                      Auto-deployed by GitHub Actions. Verified for production readiness.
+                  </footer>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public-reports
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -39,3 +39,9 @@ dist-ssr
 **/reports/screenshots/*.png
 **/__pycache__
 **/*.pyc
+*.xlsx
+*.apk
+reports-download/
+full-e2e-report/
+public-reports/
+

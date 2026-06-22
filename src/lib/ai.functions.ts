@@ -1,19 +1,54 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const isOpenRouter = !!process.env.OPENROUTER_API_KEY;
 
-async function callAI(body: unknown) {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("AI service is not configured");
+const GATEWAY = isOpenRouter
+  ? "https://openrouter.ai/api/v1/chat/completions"
+  : "https://ai.gateway.lovable.dev/v1/chat/completions";
+
+async function callAI(body: any) {
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.LOVABLE_API_KEY;
+  if (!apiKey) {
+    throw new Error("AI service is not configured. Please set LOVABLE_API_KEY or OPENROUTER_API_KEY.");
+  }
+
+  let requestBody = { ...body };
+  if (isOpenRouter) {
+    if (body.model === "google/gemini-3-flash-preview") {
+      const hasImage = body.messages?.some((m: any) =>
+        Array.isArray(m.content) && m.content.some((c: any) => c.type === "image_url")
+      );
+      if (hasImage) {
+        requestBody.model = process.env.OPENROUTER_VISION_MODEL || "openrouter/free";
+      } else {
+        requestBody.model = process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b:free";
+      }
+    }
+  }
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${apiKey}`,
+  };
+
+  if (isOpenRouter) {
+    headers["HTTP-Referer"] = "https://green-harvest-buddy.com";
+    headers["X-Title"] = "Green Harvest Buddy";
+  }
+
   const res = await fetch(GATEWAY, {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    headers,
+    body: JSON.stringify(requestBody),
   });
+
   if (res.status === 429) throw new Error("Too many requests — please wait a moment and try again.");
   if (res.status === 402) throw new Error("AI credits exhausted. Please add credits in workspace settings.");
-  if (!res.ok) throw new Error(`AI error ${res.status}`);
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => "");
+    throw new Error(`AI error ${res.status}: ${errorText || res.statusText}`);
+  }
   return res.json();
 }
 

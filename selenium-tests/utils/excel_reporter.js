@@ -57,10 +57,10 @@ export const generateExcelReport = async (summary, steps, outputPath) => {
 
   // ── Categorise steps ────────────────────────────────────────────────────────
   const groups = {
-    ui  : steps.filter(s => s.id.startsWith('TC-UI')),
-    func: steps.filter(s => s.id.startsWith('TC-FUNC')),
-    unit: steps.filter(s => s.id.startsWith('TC-UNIT')),
-    val : steps.filter(s => s.id.startsWith('TC-VAL')),
+    ui  : steps.filter(s => s.id.startsWith('TC-UI') || s.id.startsWith('TC-MOB-UI')),
+    func: steps.filter(s => s.id.startsWith('TC-FUNC') || s.id.startsWith('TC-MOB-FUNC')),
+    unit: steps.filter(s => s.id.startsWith('TC-UNIT') || s.id.startsWith('TC-MOB-UNIT')),
+    val : steps.filter(s => s.id.startsWith('TC-VAL') || s.id.startsWith('TC-MOB-VAL')),
   };
   const cats = [
     { label:'UI / UX Testing',         key:'ui',   steps:groups.ui   },

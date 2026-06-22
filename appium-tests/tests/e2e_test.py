@@ -25,15 +25,23 @@ def run_all():
     configure_sdk_and_appium()
     
     try:
-        limit_100 = os.environ.get("LIMIT_100") == "true"
+        test_count = os.environ.get("TEST_COUNT", "400")
         all_results = []
         
-        if limit_100:
-            print("[+] LIMIT_100=true: Running exactly 100 cases (Unit/Component Tests only)...")
+        print(f"[+] TEST_COUNT={test_count}: Configuring test categories...")
+        
+        if test_count == "100":
+            print("[+] Running exactly 100 cases (Unit/Component Tests only)...")
             unit_res = run_category("Unit Tests", run_unit_tests)
             all_results.append(unit_res)
+        elif test_count == "300":
+            print("[+] Running exactly 300 cases (UI, Functional, and Unit Tests)...")
+            ui_res   = run_category("UI-UX Tests", run_ui_tests)
+            func_res = run_category("Functional Tests", run_functional_tests)
+            unit_res = run_category("Unit Tests", run_unit_tests)
+            all_results.extend([ui_res, func_res, unit_res])
         else:
-            # 2. Run each category sequentially
+            print("[+] Running all 400 cases...")
             ui_res   = run_category("UI-UX Tests", run_ui_tests)
             func_res = run_category("Functional Tests", run_functional_tests)
             unit_res = run_category("Unit Tests", run_unit_tests)

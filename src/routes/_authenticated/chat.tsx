@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout, PageHeader } from "@/components/AppLayout";
 import { useState, useEffect, useRef } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { askAssistant } from "@/lib/ai.functions";
+import { useAskAssistant } from "@/lib/ai-client";
 import { supabase } from "@/integrations/supabase/client";
 import { Send, Mic, MicOff, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({ meta: [{ title: "AI Farming Assistant" }, { name: "description", content: "Chat with AI for crop, pest, fertilizer and irrigation guidance." }] }),
@@ -33,7 +33,7 @@ const LANGS: Record<string, { label: string; code: string }> = {
 };
 
 function ChatPage() {
-  const ask = useServerFn(askAssistant);
+  const ask = useAskAssistant();
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: "Hi! 👋 I'm your AI farming assistant. Ask me anything about crops, soil, pests, fertilizers or irrigation." },
   ]);
@@ -130,8 +130,9 @@ function ChatPage() {
       <div className="space-y-3 pb-32">
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm shadow-[var(--shadow-card)] ${m.role === "user" ? "rounded-br-sm bg-primary text-primary-foreground" : "rounded-bl-sm bg-card text-foreground border border-border"}`}>
-              {m.role === "assistant" && <Sparkles className="mb-1 inline h-3.5 w-3.5 text-primary" />} {m.content}
+            <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-[var(--shadow-card)] ${m.role === "user" ? "rounded-br-sm bg-primary text-primary-foreground" : "rounded-bl-sm bg-card text-foreground border border-border"}`}>
+              {m.role === "assistant" && <Sparkles className="mb-1 inline h-3.5 w-3.5 text-primary mr-1" />}
+              <MarkdownRenderer content={m.content} />
             </div>
           </div>
         ))}

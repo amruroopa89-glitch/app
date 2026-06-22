@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout, PageHeader } from "@/components/AppLayout";
 import { useState, useEffect } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { recommendCrops } from "@/lib/ai.functions";
+import { useRecommendCrops } from "@/lib/ai-client";
 import { supabase } from "@/integrations/supabase/client";
 import { Droplets, Sprout, TrendingUp, Coins, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -19,7 +18,7 @@ const SEASONS = ["Kharif", "Rabi", "Zaid", "Summer"];
 type Rec = { name: string; emoji: string; score: number; yield: string; water: string; fertilizer: string; profit: string; demand: string; tips: string };
 
 function RecommendPage() {
-  const call = useServerFn(recommendCrops);
+  const call = useRecommendCrops();
   const [form, setForm] = useState({
     soilType: "Loamy", soilPh: 6.5, nitrogen: 40, phosphorus: 30, potassium: 30,
     water: "Medium", season: "Kharif", region: "", history: "",

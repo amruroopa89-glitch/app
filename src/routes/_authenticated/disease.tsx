@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout, PageHeader } from "@/components/AppLayout";
 import { useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { detectDisease } from "@/lib/ai.functions";
+import { useDetectDisease } from "@/lib/ai-client";
 import { Camera, Upload, CheckCircle2, AlertTriangle, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/disease")({
 type Diag = { name: string; confidence: number; severity: string; symptoms: string; treatment: string; prevent: string };
 
 function DiseasePage() {
-  const call = useServerFn(detectDisease);
+  const call = useDetectDisease();
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<Diag | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
