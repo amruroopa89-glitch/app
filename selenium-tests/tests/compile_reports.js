@@ -88,12 +88,21 @@ async function main() {
     }
   }
 
-  if (allSteps.length === 0) {
+  const uniqueSteps = [];
+  const seenIds = new Set();
+  for (const step of allSteps) {
+    if (!seenIds.has(step.id)) {
+      seenIds.add(step.id);
+      uniqueSteps.push(step);
+    }
+  }
+
+  if (uniqueSteps.length === 0) {
     console.warn('[!] No steps found to compile. Creating empty report placeholder.');
   }
 
-  const totalPass = allSteps.filter(s => s.status === 'PASS').length;
-  const totalFail = allSteps.length - totalPass;
+  const totalPass = uniqueSteps.filter(s => s.status === 'PASS').length;
+  const totalFail = uniqueSteps.length - totalPass;
 
   const summary = {
     startTime: Math.min(...startTimes, Date.now() - 180000),
@@ -102,13 +111,13 @@ async function main() {
     deviceName:   'Desktop & Emulator',
     browserName:  'Chrome & Appium',
     targetUrl:    TARGET_URL,
-    totalSteps:   allSteps.length,
+    totalSteps:   uniqueSteps.length,
     passed:       totalPass,
     failed:       totalFail,
   };
 
   const absoluteOutputPath = path.resolve(outputPath);
-  await generateExcelReport(summary, allSteps, absoluteOutputPath);
+  await generateExcelReport(summary, uniqueSteps, absoluteOutputPath);
   console.log(`[✅] Master consolidated report successfully written to ${absoluteOutputPath}`);
 }
 
