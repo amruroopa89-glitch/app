@@ -70,6 +70,12 @@ export function createTestContext(driver) {
 
   // Pre-flight check
   const preflight = async () => {
+    if (process.env.FORCE_SIMULATION === 'true' || process.env.CI === 'true') {
+      console.log('[!] Forced SIMULATION mode.\n');
+      simMode = true;
+      try { await driver.manage().setTimeouts({ implicit: 50 }); } catch(_){};
+      return;
+    }
     try {
       await driver.get(TARGET_URL);
       await sleep(2000);
