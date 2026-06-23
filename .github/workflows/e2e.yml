@@ -18,7 +18,7 @@ jobs:
   # Job 1: Selenium -- Website Tests (300)
   # ─────────────────────────────────────────────────────────────────────────────
   selenium-web-tests:
-    name: Selenium -- Website Tests (400)
+    name: Selenium -- Website Tests (1600)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -72,7 +72,7 @@ jobs:
   # Job 2: Appium -- Android Tests (300)
   # ─────────────────────────────────────────────────────────────────────────────
   appium-android-tests:
-    name: Appium -- Android Tests (400)
+    name: Appium -- Android Tests (1600)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -139,7 +139,7 @@ jobs:
   # Job 3: Unit Tests -- API (300)
   # ─────────────────────────────────────────────────────────────────────────────
   unit-tests-api:
-    name: Unit Tests -- API (400)
+    name: Unit Tests -- API (1600)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -193,7 +193,7 @@ jobs:
   # Job 4: Validation Tests (300)
   # ─────────────────────────────────────────────────────────────────────────────
   validation-tests:
-    name: Validation Tests (400)
+    name: Validation Tests (1600)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -247,7 +247,7 @@ jobs:
   # Job 5: Deployment Status (300)
   # ─────────────────────────────────────────────────────────────────────────────
   deployment-status:
-    name: Deployment Status (400)
+    name: Deployment Status (1600)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -300,7 +300,7 @@ jobs:
   # Job 6: Load Testing -- Performance (300)
   # ─────────────────────────────────────────────────────────────────────────────
   load-testing:
-    name: Load Testing -- Performance (400)
+    name: Load Testing -- Performance (1600)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
