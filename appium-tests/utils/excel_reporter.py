@@ -214,7 +214,6 @@ def generate_excel_report(summary: dict, steps: list, output_path: str):
         ("Status",           12),
         ("Duration (ms)",    14),
         ("Timestamp",        22),
-        ("Screenshot",       20),
     ]
 
     sheets = [
@@ -228,7 +227,7 @@ def generate_excel_report(summary: dict, steps: list, output_path: str):
         wd = wb.create_sheet(name)
 
         # Banner
-        wd.merge_cells("A1:J1")
+        wd.merge_cells("A1:I1")
         wd.row_dimensions[1].height = 28
         bn = wd["A1"]
         bn.value = f"📱  Green Harvest Buddy — {name}  ({len(sheet_steps)} cases)"
@@ -286,19 +285,7 @@ def generate_excel_report(summary: dict, steps: list, output_path: str):
                 else:
                     c.fill = _fill(bg)
 
-            # Screenshot column
-            ss = step.get("screenshot")
-            sc = wd.cell(row=rn, column=10)
-            sc.alignment = Alignment(horizontal="center", vertical="center")
-            sc.border = _border(_C["row_bdr"])
-            sc.fill = _fill(bg)
-            if ss:
-                rel = os.path.basename(ss)
-                sc.value = f'=HYPERLINK("./screenshots/{rel}", "View")'
-                sc.font = _font(color=_C["blue"])
-            else:
-                sc.value = "—"
-                sc.font = _font(color=_C["sub"])
+
 
     # Save
     wb.save(output_path)

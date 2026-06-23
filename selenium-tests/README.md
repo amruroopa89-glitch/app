@@ -72,4 +72,3 @@ Inside this directory, you will find:
    * **Detailed Category Sheets**: 4 separate sheets (UI-UX Tests, Functional Tests, Unit Tests, Validation Tests) logging element targets, actions, expected vs actual results, execution timings, and conditional status highlights (`PASS` / `FAIL`).
 2. **Screenshots Directory** (`selenium-tests/reports/screenshots/`):
    * Detailed viewport screenshots captured at each verification step.
-   * Internal Excel links allow you to open the verification screenshot directly from the report sheet.

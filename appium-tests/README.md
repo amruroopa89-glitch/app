@@ -99,4 +99,3 @@ Inside this directory, you will find:
    * **Detailed Log Sheet**: Step-by-step audit showing target elements, actions taken, expected vs actual results, execution timings, and conditional status cells (`PASS` / `FAIL`).
 2. **Screenshots Directory** (`appium-tests/reports/screenshots/`):
    * Viewport screenshots captured at each verification step.
-   * Clicking the **"View Image"** hyperlink inside the Excel file will open the corresponding verification screenshot directly.
