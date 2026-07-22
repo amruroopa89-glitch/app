@@ -121,18 +121,12 @@ jobs:
           TEST_URL: http://localhost:3000
           TEST_COUNT: "400"
 
-      - name: Standardise Report Name
-        if: always()
-        run: |
-          mkdir -p appium-tests/reports-fixed
-          cp appium-tests/reports/GreenHarvestBuddy_Appium_E2E_*.xlsx appium-tests/reports-fixed/appium-android-report.xlsx || echo "No Appium report found"
-
       - name: Upload Appium Test Report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: appium-android-report
-          path: appium-tests/reports-fixed/appium-android-report.xlsx
+          path: appium-tests/reports/appium-android-report.xlsx
           retention-days: 7
 
   # ─────────────────────────────────────────────────────────────────────────────

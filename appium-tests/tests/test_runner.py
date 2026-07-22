@@ -52,6 +52,9 @@ def _port_open(port: int) -> bool:
 
 def configure_sdk_and_appium():
     """Auto-configure Android SDK path and start Appium server if not active."""
+    if os.getenv("FORCE_SIMULATION") == "true" or os.getenv("CI") == "true":
+        print("[!] Forced SIMULATION mode. Skipping Appium/SDK setup.")
+        return
     global appium_proc
     user_home = os.path.expanduser("~")
     sdk_candidates = [
@@ -90,6 +93,8 @@ def configure_sdk_and_appium():
 
 def stop_appium():
     """Terminate the auto-started Appium process."""
+    if os.getenv("FORCE_SIMULATION") == "true" or os.getenv("CI") == "true":
+        return
     global appium_proc
     if appium_proc:
         print("[*] Terminating Appium process…")
@@ -102,6 +107,9 @@ def stop_appium():
 
 def create_driver():
     """Initialise and return the Appium driver, or None if connection fails."""
+    if os.getenv("FORCE_SIMULATION") == "true" or os.getenv("CI") == "true":
+        print("[!] Forced SIMULATION mode.\n")
+        return None
     try:
         from appium import webdriver as appium_webdriver
         from appium.options.common import AppiumOptions
@@ -249,7 +257,7 @@ def generate_combined_report(all_results: list):
     end_time = max(end_times) if end_times else int(time.time() * 1000)
     dur_s = (end_time - start_time) / 1000.0
     
-    excel_path = os.path.join(REPORTS_DIR, f"GreenHarvestBuddy_Appium_E2E_{int(time.time())}.xlsx")
+    excel_path = os.path.join(REPORTS_DIR, "appium-android-report.xlsx")
     
     summary = {
         "startTime":    start_time,

@@ -170,7 +170,37 @@ Recent crop history: ${data.history ?? "unknown"}`;
         }
       );
 
-      return parseJSONResponse(json);
+      const parsed = parseJSONResponse(json);
+      if (parsed && (parsed.recommendations || Array.isArray(parsed))) {
+        const rawRecs = parsed.recommendations || (Array.isArray(parsed) ? parsed : []);
+        const CROP_DB: Record<string, any> = {
+          Paddy: { emoji: "🌾", yield: "2.5 t/acre", water: "High", fertilizer: "NPK 120:60:60", profit: "₹25,000/acre", demand: "High", tips: "Maintain standing water during early growth phase." },
+          Cotton: { emoji: "🌱", yield: "1.2 t/acre", water: "Medium", fertilizer: "NPK 80:40:40", profit: "₹30,000/acre", demand: "High", tips: "Monitor regularly for sucking pests and pink bollworm." },
+          Groundnut: { emoji: "🥜", yield: "1.0 t/acre", water: "Low", fertilizer: "NPK 20:40:20 + Gypsum", profit: "₹22,000/acre", demand: "Medium", tips: "Apply gypsum at 200 kg/acre at pegging stage." },
+          Maize: { emoji: "🌽", yield: "3.0 t/acre", water: "Medium", fertilizer: "NPK 120:60:50", profit: "₹20,000/acre", demand: "High", tips: "Ensure proper earthing up at 30-35 days after sowing." },
+          Wheat: { emoji: "🌾", yield: "2.0 t/acre", water: "Medium", fertilizer: "NPK 120:50:50", profit: "₹22,000/acre", demand: "High", tips: "Ensure critical irrigation at crown root initiation." },
+          Sorghum: { emoji: "🌾", yield: "1.5 t/acre", water: "Low", fertilizer: "NPK 80:40:40", profit: "₹18,000/acre", demand: "Medium", tips: "Drought-tolerant crop suitable for dryland agriculture." },
+        };
+        const normalized = rawRecs.map((item: any, idx: number) => {
+          let name = typeof item === "string" ? item : (item?.name || item?.crop || `Crop ${idx + 1}`);
+          let score = parseFloat(typeof item === "object" ? item?.score : "") || (95 - idx * 5);
+          if (score > 100) score /= 10;
+          const db = CROP_DB[name] || {};
+          return {
+            name,
+            emoji: (typeof item === "object" && item?.emoji) || db.emoji || "🌾",
+            score: Math.min(100, Math.max(50, Math.round(score))),
+            yield: (typeof item === "object" && item?.yield) || db.yield || "2.0 t/acre",
+            water: (typeof item === "object" && item?.water) || db.water || "Medium",
+            fertilizer: (typeof item === "object" && item?.fertilizer) || db.fertilizer || "NPK Balanced",
+            profit: (typeof item === "object" && item?.profit) || db.profit || "₹25,000/acre",
+            demand: (typeof item === "object" && item?.demand) || db.demand || "High",
+            tips: (typeof item === "object" && item?.tips) || db.tips || "Follow standard agronomic practices.",
+          };
+        });
+        return { recommendations: normalized.slice(0, 5), rationale: parsed.rationale || "Recommended crops based on soil conditions." };
+      }
+      return parsed;
     }
 
     return serverFn(req);
