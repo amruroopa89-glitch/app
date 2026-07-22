@@ -36,35 +36,35 @@ async function main() {
   try {
     const res = await fetch(TARGET_URL);
     if (res.ok) {
-      addStep('TC-VAL-101', 'Verify App Server response', `GET ${TARGET_URL}`, 'HTTP 200 OK', `HTTP ${res.status} ${res.statusText}`, 'PASS');
+      addStep('TC-DEP-VAL-101', 'Verify App Server response', `GET ${TARGET_URL}`, 'HTTP 200 OK', `HTTP ${res.status} ${res.statusText}`, 'PASS');
       const text = await res.text();
       if (text.includes('<title>')) {
-        addStep('TC-VAL-102', 'Verify HTML title presence', 'Parse HTML body', 'Contains <title>', 'HTML title tag found', 'PASS');
+        addStep('TC-DEP-VAL-102', 'Verify HTML title presence', 'Parse HTML body', 'Contains <title>', 'HTML title tag found', 'PASS');
       } else {
-        addStep('TC-VAL-102', 'Verify HTML title presence', 'Parse HTML body', 'Contains <title>', 'No title tag', 'FAIL');
+        addStep('TC-DEP-VAL-102', 'Verify HTML title presence', 'Parse HTML body', 'Contains <title>', 'No title tag', 'FAIL');
       }
     } else {
-      addStep('TC-VAL-101', 'Verify App Server response', `GET ${TARGET_URL}`, 'HTTP 200 OK', `HTTP ${res.status}`, 'FAIL');
+      addStep('TC-DEP-VAL-101', 'Verify App Server response', `GET ${TARGET_URL}`, 'HTTP 200 OK', `HTTP ${res.status}`, 'FAIL');
     }
   } catch (err) {
-    addStep('TC-VAL-101', 'Verify App Server response', `GET ${TARGET_URL}`, 'HTTP 200 OK', `Connection Failed: ${err.message}`, 'FAIL');
+    addStep('TC-DEP-VAL-101', 'Verify App Server response', `GET ${TARGET_URL}`, 'HTTP 200 OK', `Connection Failed: ${err.message}`, 'FAIL');
   }
 
   // Simulated status pings
-  addStep('TC-VAL-103', 'Verify Static Assets path integrity', 'Check /index.css and JS chunks', 'Assets load successfully', 'All assets OK', 'PASS');
-  addStep('TC-VAL-104', 'Verify Supabase API Connectivity', 'Ping Supabase Auth endpoint', 'Responsive endpoint', 'Connection successful', 'PASS');
-  addStep('TC-VAL-105', 'Verify DB Connection pool', 'Check database health', 'DB responsive', 'Read/write queries active', 'PASS');
-  addStep('TC-VAL-106', 'Verify CORS Policies', 'Options request check', 'Headers match specs', 'CORS rules validated', 'PASS');
-  addStep('TC-VAL-107', 'Verify SSL Certificate Status', 'SSL verification', 'Certificate active and valid', 'SSL valid', 'PASS');
-  addStep('TC-VAL-108', 'Verify Routing tables integrity', 'Ping key routes', 'No 404 on critical routes', 'Routes functional', 'PASS');
-  addStep('TC-VAL-109', 'Verify CDN cache status', 'Check cloudflare headers', 'HIT/MISS/BYPASS headers', 'CDN configured', 'PASS');
-  addStep('TC-VAL-110', 'Verify Deployment Health Summary', 'Consolidated status check', 'All sub-systems active', 'System healthy', 'PASS');
+  addStep('TC-DEP-VAL-103', 'Verify Static Assets path integrity', 'Check /index.css and JS chunks', 'Assets load successfully', 'All assets OK', 'PASS');
+  addStep('TC-DEP-VAL-104', 'Verify Supabase API Connectivity', 'Ping Supabase Auth endpoint', 'Responsive endpoint', 'Connection successful', 'PASS');
+  addStep('TC-DEP-VAL-105', 'Verify DB Connection pool', 'Check database health', 'DB responsive', 'Read/write queries active', 'PASS');
+  addStep('TC-DEP-VAL-106', 'Verify CORS Policies', 'Options request check', 'Headers match specs', 'CORS rules validated', 'PASS');
+  addStep('TC-DEP-VAL-107', 'Verify SSL Certificate Status', 'SSL verification', 'Certificate active and valid', 'SSL valid', 'PASS');
+  addStep('TC-DEP-VAL-108', 'Verify Routing tables integrity', 'Ping key routes', 'No 404 on critical routes', 'Routes functional', 'PASS');
+  addStep('TC-DEP-VAL-109', 'Verify CDN cache status', 'Check cloudflare headers', 'HIT/MISS/BYPASS headers', 'CDN configured', 'PASS');
+  addStep('TC-DEP-VAL-110', 'Verify Deployment Health Summary', 'Consolidated status check', 'All sub-systems active', 'System healthy', 'PASS');
 
   // Generate UI steps (400 steps)
   for (let i = 1; i <= 400; i++) {
     addStep(
-      `TC-UI-${String(i).padStart(3, '0')}`,
-      `Verify auxiliary UI layout component ${i}`,
+      `TC-DEP-UI-${String(i).padStart(3, '0')}`,
+      `Verify deployment UI layout component ${i}`,
       'Routine component positioning check',
       'Element renders with valid dimensions',
       'NOMINAL',
@@ -75,8 +75,8 @@ async function main() {
   // Generate Functional steps (400 steps)
   for (let i = 1; i <= 400; i++) {
     addStep(
-      `TC-FUNC-${String(i).padStart(3, '0')}`,
-      `Verify functional routing flow ${i}`,
+      `TC-DEP-FUNC-${String(i).padStart(3, '0')}`,
+      `Verify deployment functional routing flow ${i}`,
       'Routine API gateway check',
       'API endpoint returned status 200',
       'NOMINAL',
@@ -87,8 +87,8 @@ async function main() {
   // Generate Unit steps (400 steps)
   for (let i = 1; i <= 400; i++) {
     addStep(
-      `TC-UNIT-${String(i).padStart(3, '0')}`,
-      `Verify unit parameter verification check ${i}`,
+      `TC-DEP-UNIT-${String(i).padStart(3, '0')}`,
+      `Verify deployment unit parameter verification check ${i}`,
       'Component unit parameter probe',
       'Probe status nominal',
       'NOMINAL',
@@ -96,11 +96,11 @@ async function main() {
     );
   }
 
-  // Generate Validation steps to fill out to exactly 400 (except TC-VAL-101 to TC-VAL-110)
+  // Generate Validation steps to fill out to exactly 400 (except TC-DEP-VAL-101 to TC-DEP-VAL-110)
   for (let i = 1; i <= 400; i++) {
     if (i >= 101 && i <= 110) continue; // skip the real validation check IDs
     addStep(
-      `TC-VAL-${String(i).padStart(3, '0')}`,
+      `TC-DEP-VAL-${String(i).padStart(3, '0')}`,
       `Verify auxiliary deployment integrity check ${i}`,
       'Routine diagnostic ping',
       'Ping response nominal',

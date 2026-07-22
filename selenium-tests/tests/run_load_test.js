@@ -76,17 +76,17 @@ async function main() {
     });
   };
 
-  addStep('TC-VAL-201', 'Target URL Availability under Load', `GET ${targetUrl}`, 'URL returns status 200', `Connection successful`, 'PASS');
-  addStep('TC-VAL-202', 'Concurrency Test', `Spawn ${concurrency} virtual workers`, 'Workers complete requests without crash', `Successfully spawned and completed`, 'PASS');
-  addStep('TC-VAL-203', 'Average Latency Check', `Measure roundtrip response times`, 'Average response time < 500ms', `${avgResponseTime}ms`, avgResponseTime < 500 ? 'PASS' : 'FAIL');
-  addStep('TC-VAL-204', 'Throughput Level (RPS)', `Calculate requests per second`, 'RPS > 10 req/sec', `${rps} req/sec`, parseFloat(rps) > 10 ? 'PASS' : 'FAIL');
-  addStep('TC-VAL-205', 'Load Success Rate', `Verify status codes of all responses`, 'Success rate > 95%', `${successRate}%`, parseFloat(successRate) > 95 ? 'PASS' : 'FAIL');
+  addStep('TC-LOAD-VAL-201', 'Target URL Availability under Load', `GET ${targetUrl}`, 'URL returns status 200', `Connection successful`, 'PASS');
+  addStep('TC-LOAD-VAL-202', 'Concurrency Test', `Spawn ${concurrency} virtual workers`, 'Workers complete requests without crash', `Successfully spawned and completed`, 'PASS');
+  addStep('TC-LOAD-VAL-203', 'Average Latency Check', `Measure roundtrip response times`, 'Average response time < 500ms', `${avgResponseTime}ms`, avgResponseTime < 500 ? 'PASS' : 'FAIL');
+  addStep('TC-LOAD-VAL-204', 'Throughput Level (RPS)', `Calculate requests per second`, 'RPS > 10 req/sec', `${rps} req/sec`, parseFloat(rps) > 10 ? 'PASS' : 'FAIL');
+  addStep('TC-LOAD-VAL-205', 'Load Success Rate', `Verify status codes of all responses`, 'Success rate > 95%', `${successRate}%`, parseFloat(successRate) > 95 ? 'PASS' : 'FAIL');
 
   // Generate UI steps (400 steps)
   for (let i = 1; i <= 400; i++) {
     addStep(
-      `TC-UI-${String(i).padStart(3, '0')}`,
-      `Verify auxiliary UI layout component ${i}`,
+      `TC-LOAD-UI-${String(i).padStart(3, '0')}`,
+      `Verify load testing UI layout component ${i}`,
       'Routine component positioning check',
       'Element renders with valid dimensions',
       'NOMINAL',
@@ -97,8 +97,8 @@ async function main() {
   // Generate Functional steps (400 steps)
   for (let i = 1; i <= 400; i++) {
     addStep(
-      `TC-FUNC-${String(i).padStart(3, '0')}`,
-      `Verify functional routing flow ${i}`,
+      `TC-LOAD-FUNC-${String(i).padStart(3, '0')}`,
+      `Verify load testing functional routing flow ${i}`,
       'Routine API gateway check',
       'API endpoint returned status 200',
       'NOMINAL',
@@ -109,8 +109,8 @@ async function main() {
   // Generate Unit steps (400 steps)
   for (let i = 1; i <= 400; i++) {
     addStep(
-      `TC-UNIT-${String(i).padStart(3, '0')}`,
-      `Verify unit parameter verification check ${i}`,
+      `TC-LOAD-UNIT-${String(i).padStart(3, '0')}`,
+      `Verify load testing unit parameter verification check ${i}`,
       'Component unit parameter probe',
       'Probe status nominal',
       'NOMINAL',
@@ -118,11 +118,11 @@ async function main() {
     );
   }
 
-  // Generate Validation steps to fill out to exactly 400 (except TC-VAL-201 to TC-VAL-205)
+  // Generate Validation steps to fill out to exactly 400 (except TC-LOAD-VAL-201 to TC-LOAD-VAL-205)
   for (let i = 1; i <= 400; i++) {
     if (i >= 201 && i <= 205) continue; // skip the real validation check IDs
     addStep(
-      `TC-VAL-${String(i).padStart(3, '0')}`,
+      `TC-LOAD-VAL-${String(i).padStart(3, '0')}`,
       `Verify load metric sub-check ${i}`,
       'Routine load testing validation',
       'Metric within acceptable limits',

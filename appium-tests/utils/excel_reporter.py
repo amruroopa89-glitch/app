@@ -67,10 +67,10 @@ def generate_excel_report(summary: dict, steps: list, output_path: str):
 
     # ── Categorise ────────────────────────────────────────────────────────────
     groups = {
-        "ui":   [s for s in steps if s["id"].startswith("TC-MOB-UI")],
-        "func": [s for s in steps if s["id"].startswith("TC-MOB-FUNC")],
-        "unit": [s for s in steps if s["id"].startswith("TC-MOB-UNIT")],
-        "val":  [s for s in steps if s["id"].startswith("TC-MOB-VAL")],
+        "ui":   [s for s in steps if "-UI" in s["id"]],
+        "func": [s for s in steps if "-FUNC" in s["id"]],
+        "unit": [s for s in steps if "-UNIT" in s["id"]],
+        "val":  [s for s in steps if "-VAL" in s["id"]],
     }
     cats = [
         ("UI / UX Testing (Mobile)",         "ui",   groups["ui"]),

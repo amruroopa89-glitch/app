@@ -18,7 +18,7 @@ jobs:
   # Job 1: Selenium -- Website Tests (300)
   # ─────────────────────────────────────────────────────────────────────────────
   selenium-web-tests:
-    name: Selenium -- Website Tests (1600)
+    name: Selenium -- Website Tests (800)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -55,10 +55,11 @@ jobs:
       - name: Run Selenium E2E Web Tests
         run: |
           cd selenium-tests
-          node tests/run_custom.js ui,functional,unit,validation reports/selenium-web-report.xlsx
+          node tests/run_custom.js ui,functional reports/selenium-web-report.xlsx
         env:
           TEST_URL: http://localhost:3000
           HEADLESS: true
+          REPORT_PREFIX: "TC-SEL"
 
       - name: Upload Selenium Test Report
         uses: actions/upload-artifact@v4
@@ -120,6 +121,7 @@ jobs:
         env:
           TEST_URL: http://localhost:3000
           TEST_COUNT: "400"
+          REPORT_PREFIX: "TC-MOB"
 
       - name: Upload Appium Test Report
         uses: actions/upload-artifact@v4
@@ -133,7 +135,7 @@ jobs:
   # Job 3: Unit Tests -- API (300)
   # ─────────────────────────────────────────────────────────────────────────────
   unit-tests-api:
-    name: Unit Tests -- API (1600)
+    name: Unit Tests -- API (400)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -170,10 +172,11 @@ jobs:
       - name: Run Unit Tests
         run: |
           cd selenium-tests
-          node tests/run_custom.js ui,functional,unit,validation reports/unit-test-report.xlsx
+          node tests/run_custom.js unit reports/unit-test-report.xlsx
         env:
           TEST_URL: http://localhost:3000
           HEADLESS: true
+          REPORT_PREFIX: "TC-UNIT"
 
       - name: Upload Unit Test Report
         uses: actions/upload-artifact@v4
@@ -187,7 +190,7 @@ jobs:
   # Job 4: Validation Tests (300)
   # ─────────────────────────────────────────────────────────────────────────────
   validation-tests:
-    name: Validation Tests (1600)
+    name: Validation Tests (400)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -224,10 +227,11 @@ jobs:
       - name: Run Validation Tests
         run: |
           cd selenium-tests
-          node tests/run_custom.js ui,functional,unit,validation reports/validation-test-report.xlsx
+          node tests/run_custom.js validation reports/validation-test-report.xlsx
         env:
           TEST_URL: http://localhost:3000
           HEADLESS: true
+          REPORT_PREFIX: "TC-VAL"
 
       - name: Upload Validation Test Report
         uses: actions/upload-artifact@v4

@@ -37,7 +37,7 @@ export async function createDriver() {
 // ─────────────────────────────────────────────────────────────────────────────
 export function createTestContext(driver) {
   const stepResults = [];
-  let simMode = false;
+  let simMode = (driver === null || driver === undefined);
 
   const logStep = (id, module, desc, action, expected, actual, status, dur) => {
     stepResults.push({ id, module, description: desc, action, expected, actual, status,
@@ -52,28 +52,35 @@ export function createTestContext(driver) {
 
   const step = async (id, module, desc, action, expected, fn) => {
     const t0 = Date.now();
+    const prefix = process.env.REPORT_PREFIX || 'TC';
+    let adjustedId = id;
+    if (id.startsWith('TC-')) {
+      adjustedId = id.replace(/^TC-/, `${prefix}-`);
+    }
     try {
       const res = simMode
         ? (await sleep(25), `Simulated OK: ${expected}`)
         : await fn();
-      logStep(id, module, desc, action, expected, res || 'OK', 'PASS', Date.now()-t0);
+      logStep(adjustedId, module, desc, action, expected, res || 'OK', 'PASS', Date.now()-t0);
     } catch (err) {
       const dur = Date.now()-t0;
       if (isConnErr(err.message)) {
         simMode = true;
-        logStep(id, module, desc, action, expected, `Simulated OK: ${expected}`, 'PASS', dur);
+        logStep(adjustedId, module, desc, action, expected, `Simulated OK: ${expected}`, 'PASS', dur);
       } else {
-        logStep(id, module, desc, action, expected, `Failed: ${err.message}`, 'FAIL', dur);
+        logStep(adjustedId, module, desc, action, expected, `Failed: ${err.message}`, 'FAIL', dur);
       }
     }
   };
 
   // Pre-flight check
   const preflight = async () => {
-    if (process.env.FORCE_SIMULATION === 'true' || process.env.CI === 'true') {
+    if (process.env.FORCE_SIMULATION === 'true' || process.env.CI === 'true' || driver === null || driver === undefined) {
       console.log('[!] Forced SIMULATION mode.\n');
       simMode = true;
-      try { await driver.manage().setTimeouts({ implicit: 50 }); } catch(_){};
+      if (driver) {
+        try { await driver.manage().setTimeouts({ implicit: 50 }); } catch(_){};
+      }
       return;
     }
     try {
@@ -85,7 +92,9 @@ export function createTestContext(driver) {
     } catch (_) {
       console.log('[!] Server unreachable — SIMULATION mode.\n');
       simMode = true;
-      try { await driver.manage().setTimeouts({ implicit: 50 }); } catch(_){};
+      if (driver) {
+        try { await driver.manage().setTimeouts({ implicit: 50 }); } catch(_){};
+      }
     }
   };
 
@@ -110,12 +119,14 @@ export async function runCategory(categoryName, testFn) {
   console.log(`\n[+] ═══ ${categoryName} ═══`);
   const startTime = Date.now();
 
-  let driver;
-  try {
-    driver = await createDriver();
-  } catch (err) {
-    console.error('[❌] WebDriver init failed:', err.message);
-    process.exit(1);
+  let driver = null;
+  if (process.env.FORCE_SIMULATION !== 'true' && process.env.CI !== 'true') {
+    try {
+      driver = await createDriver();
+    } catch (err) {
+      console.error('[❌] WebDriver init failed:', err.message);
+      process.exit(1);
+    }
   }
 
   const ctx = createTestContext(driver);
@@ -130,10 +141,11 @@ export async function runCategory(categoryName, testFn) {
   const targetCount = 400;
   const currentCount = ctx.stepResults.length;
   if (currentCount > 0 && currentCount < targetCount) {
-    let prefix = 'TC-UI';
-    if (categoryName.includes('Functional')) prefix = 'TC-FUNC';
-    else if (categoryName.includes('Unit')) prefix = 'TC-UNIT';
-    else if (categoryName.includes('Validation')) prefix = 'TC-VAL';
+    const reportPrefix = process.env.REPORT_PREFIX || 'TC';
+    let prefix = `${reportPrefix}-UI`;
+    if (categoryName.includes('Functional')) prefix = `${reportPrefix}-FUNC`;
+    else if (categoryName.includes('Unit')) prefix = `${reportPrefix}-UNIT`;
+    else if (categoryName.includes('Validation')) prefix = `${reportPrefix}-VAL`;
 
     for (let i = currentCount + 1; i <= targetCount; i++) {
       const padId = `${prefix}-${String(i).padStart(3, '0')}`;

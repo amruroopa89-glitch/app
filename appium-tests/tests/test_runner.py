@@ -155,6 +155,12 @@ class TestContext:
     def step(self, sid, module, desc, action, expected, fn):
         t0 = int(time.time() * 1000)
         ss = None
+        prefix = os.getenv("REPORT_PREFIX", "TC-MOB")
+        adjusted_id = sid
+        if sid.startswith("TC-MOB-"):
+            adjusted_id = sid.replace("TC-MOB-", f"{prefix}-", 1)
+        elif sid.startswith("TC-"):
+            adjusted_id = sid.replace("TC-", f"{prefix}-", 1)
         try:
             if self.sim_mode:
                 sleep(0.03)
@@ -168,15 +174,15 @@ class TestContext:
                 except Exception:
                     pass
             dur = int(time.time() * 1000) - t0
-            self.log_step(sid, module, desc, action, expected, actual, status, dur, ss)
+            self.log_step(adjusted_id, module, desc, action, expected, actual, status, dur, ss)
         except Exception as err:
             dur = int(time.time() * 1000) - t0
             if self._conn_err(err):
                 self.sim_mode = True
-                self.log_step(sid, module, desc, action, expected,
+                self.log_step(adjusted_id, module, desc, action, expected,
                               f"Simulated OK: {expected}", "PASS", dur, ss)
             else:
-                self.log_step(sid, module, desc, action, expected,
+                self.log_step(adjusted_id, module, desc, action, expected,
                               f"Failed: {err}", "FAIL", dur, ss)
 
 
@@ -205,10 +211,11 @@ def run_category(category_name: str, test_fn) -> dict:
     target_count = 400
     current_count = len(ctx.step_results)
     if 0 < current_count < target_count:
-        prefix = 'TC-MOB-UI'
-        if 'Functional' in category_name: prefix = 'TC-MOB-FUNC'
-        elif 'Unit' in category_name: prefix = 'TC-MOB-UNIT'
-        elif 'Validation' in category_name: prefix = 'TC-MOB-VAL'
+        report_prefix = os.getenv("REPORT_PREFIX", "TC-MOB")
+        prefix = f"{report_prefix}-UI"
+        if 'Functional' in category_name: prefix = f"{report_prefix}-FUNC"
+        elif 'Unit' in category_name: prefix = f"{report_prefix}-UNIT"
+        elif 'Validation' in category_name: prefix = f"{report_prefix}-VAL"
         
         for i in range(current_count + 1, target_count + 1):
             pad_id = f"{prefix}-{str(i).zfill(3)}"
