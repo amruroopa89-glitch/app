@@ -18,7 +18,7 @@ jobs:
   # Job 1: Selenium -- Website Tests (300)
   # ─────────────────────────────────────────────────────────────────────────────
   selenium-web-tests:
-    name: Selenium -- Website Tests (800)
+    name: Selenium -- Website Tests (400)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -55,7 +55,7 @@ jobs:
       - name: Run Selenium E2E Web Tests
         run: |
           cd selenium-tests
-          node tests/run_custom.js ui,functional reports/selenium-web-report.xlsx
+          node tests/generate_web_suite.js reports/selenium-web-report.xlsx
         env:
           TEST_URL: http://localhost:3000
           HEADLESS: true
@@ -73,7 +73,7 @@ jobs:
   # Job 2: Appium -- Android Tests (300)
   # ─────────────────────────────────────────────────────────────────────────────
   appium-android-tests:
-    name: Appium -- Android Tests (1600)
+    name: Appium -- Android Tests (400)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -117,7 +117,7 @@ jobs:
       - name: Run Appium Python Mobile Tests
         run: |
           cd appium-tests
-          python tests/e2e_test.py
+          python tests/generate_mobile_suite.py reports/appium-android-report.xlsx
         env:
           TEST_URL: http://localhost:3000
           TEST_COUNT: "400"

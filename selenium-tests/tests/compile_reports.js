@@ -21,7 +21,7 @@ async function readStepsFromExcel(filePath) {
   await wb.xlsx.readFile(filePath);
 
   const steps = [];
-  const sheets = ['UI-UX Tests', 'Functional Tests', 'Unit Tests', 'Validation Tests'];
+  const sheets = wb.worksheets.map(ws => ws.name).filter(name => name !== 'Dashboard Summary');
 
   for (const sheetName of sheets) {
     const ws = wb.getWorksheet(sheetName);
@@ -32,17 +32,38 @@ async function readStepsFromExcel(filePath) {
       if (rowNumber >= 3) {
         const id = row.getCell(1).value;
         if (id) {
-          steps.push({
-            id: String(id),
-            module: String(row.getCell(2).value || ''),
-            description: String(row.getCell(3).value || ''),
-            action: String(row.getCell(4).value || ''),
-            expected: String(row.getCell(5).value || ''),
-            actual: String(row.getCell(6).value || ''),
-            status: String(row.getCell(7).value || 'PASS'),
-            duration: Number(row.getCell(8).value) || 0,
-            timestamp: new Date().toISOString()
-          });
+          const has12Cols = row.getCell(10).value !== null && row.getCell(11).value !== null;
+          if (has12Cols) {
+            steps.push({
+              id: String(id),
+              module: String(row.getCell(2).value || ''),
+              scenario: String(row.getCell(3).value || ''),
+              description: String(row.getCell(4).value || ''),
+              preconditions: String(row.getCell(5).value || 'N/A'),
+              steps: String(row.getCell(6).value || ''),
+              data: String(row.getCell(7).value || 'None'),
+              expected: String(row.getCell(8).value || ''),
+              actual: String(row.getCell(9).value || ''),
+              status: String(row.getCell(10).value || 'PASS'),
+              severity: String(row.getCell(11).value || 'Medium'),
+              priority: String(row.getCell(12).value || 'P1')
+            });
+          } else {
+            steps.push({
+              id: String(id),
+              module: String(row.getCell(2).value || ''),
+              scenario: String(row.getCell(3).value || ''),
+              description: String(row.getCell(3).value || ''),
+              preconditions: 'N/A',
+              steps: String(row.getCell(4).value || ''),
+              data: 'None',
+              expected: String(row.getCell(5).value || ''),
+              actual: String(row.getCell(6).value || ''),
+              status: String(row.getCell(7).value || 'PASS'),
+              severity: 'Medium',
+              priority: 'P1'
+            });
+          }
         }
       }
     });

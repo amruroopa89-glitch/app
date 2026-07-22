@@ -65,19 +65,18 @@ def generate_excel_report(summary: dict, steps: list, output_path: str):
 
     wb = Workbook()
 
-    # ── Categorise ────────────────────────────────────────────────────────────
-    groups = {
-        "ui":   [s for s in steps if "-UI" in s["id"]],
-        "func": [s for s in steps if "-FUNC" in s["id"]],
-        "unit": [s for s in steps if "-UNIT" in s["id"]],
-        "val":  [s for s in steps if "-VAL" in s["id"]],
-    }
-    cats = [
-        ("UI / UX Testing (Mobile)",         "ui",   groups["ui"]),
-        ("Functional Testing (Mobile)",      "func", groups["func"]),
-        ("Unit / Component Testing (Mobile)","unit", groups["unit"]),
-        ("Validation Testing (Mobile)",      "val",  groups["val"]),
-    ]
+    # Group dynamically by module/category field
+    module_groups = {}
+    for s in steps:
+        mod = s.get("module", "General Tests")
+        if mod not in module_groups:
+            module_groups[mod] = []
+        module_groups[mod].append(s)
+
+    cats = []
+    for name, s_list in module_groups.items():
+        key = "".join([c for c in name.lower() if c.isalnum()])
+        cats.append((name, key, s_list))
 
     total = len(steps)
     passed = sum(1 for s in steps if s.get("status") == "PASS")
@@ -205,29 +204,28 @@ def generate_excel_report(summary: dict, steps: list, output_path: str):
     # TABS 2-5 — DETAIL LOGS
     # ══════════════════════════════════════════════════════════════════════════
     headers = [
-        ("Test ID",          14),
-        ("Module / Feature", 22),
-        ("Description",      42),
-        ("Action Taken",     40),
-        ("Expected Outcome", 40),
-        ("Actual Result",    48),
-        ("Status",           12),
-        ("Duration (ms)",    14),
-        ("Timestamp",        22),
+        ("Test Case ID",          15),
+        ("Module/Feature",        25),
+        ("Test Scenario",         30),
+        ("Test Case Description", 40),
+        ("Preconditions",         25),
+        ("Test Steps",            40),
+        ("Test Data",             20),
+        ("Expected Result",       40),
+        ("Actual Result",         40),
+        ("Status",                12),
+        ("Severity",              12),
+        ("Priority",              12),
     ]
 
-    sheets = [
-        ("UI-UX Tests",      groups["ui"]),
-        ("Functional Tests", groups["func"]),
-        ("Unit Tests",       groups["unit"]),
-        ("Validation Tests", groups["val"]),
-    ]
+    sheets = [(name, s_list) for name, _, s_list in cats]
 
     for name, sheet_steps in sheets:
-        wd = wb.create_sheet(name)
+        clean_name = "".join([c if c not in '*?:\\/[]' else '-' for c in name])[:31]
+        wd = wb.create_sheet(clean_name)
 
         # Banner
-        wd.merge_cells("A1:I1")
+        wd.merge_cells("A1:L1")
         wd.row_dimensions[1].height = 28
         bn = wd["A1"]
         bn.value = f"📱  Green Harvest Buddy — {name}  ({len(sheet_steps)} cases)"
@@ -256,28 +254,26 @@ def generate_excel_report(summary: dict, steps: list, output_path: str):
             vals = [
                 step.get("id", ""),
                 step.get("module", ""),
+                step.get("scenario", step.get("description", "")),
                 step.get("description", ""),
-                step.get("action", ""),
+                step.get("preconditions", "N/A"),
+                step.get("steps", step.get("action", "")),
+                step.get("data", "None"),
                 step.get("expected", ""),
                 step.get("actual", ""),
-                step.get("status", ""),
-                step.get("duration", 0),
-                (step.get("timestamp", "") or "")[11:19],
+                step.get("status", "PASS"),
+                step.get("severity", "Medium"),
+                step.get("priority", "P1"),
             ]
 
             for ci, v in enumerate(vals):
                 c = wd.cell(row=rn, column=ci + 1, value=v)
                 c.font = _font()
                 c.border = _border(_C["row_bdr"])
-                c.alignment = Alignment(vertical="center", wrap_text=2 <= ci <= 5)
-                if ci == 0:
+                c.alignment = Alignment(vertical="center", wrap_text=2 <= ci <= 8)
+                if ci in (0, 9, 10, 11):
                     c.alignment = Alignment(horizontal="center", vertical="center")
-                if ci == 7:
-                    c.alignment = Alignment(horizontal="right", vertical="center")
-                    c.number_format = "#,##0"
-                if ci == 8:
-                    c.alignment = Alignment(horizontal="center", vertical="center")
-                if ci == 6:
+                if ci == 9:
                     ok = step.get("status") == "PASS"
                     c.fill = _fill(_C["lt_green"] if ok else _C["lt_red"])
                     c.font = _font(bold=True, color=_C["green"] if ok else _C["red"])
@@ -289,4 +285,4 @@ def generate_excel_report(summary: dict, steps: list, output_path: str):
 
     # Save
     wb.save(output_path)
-    print(f"[+] Excel report → {output_path}")
+    print(f"[+] Excel report -> {output_path}")

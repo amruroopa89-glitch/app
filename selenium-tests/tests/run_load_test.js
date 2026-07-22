@@ -15,8 +15,8 @@ async function main() {
   const startTime = Date.now();
 
   const targetUrl = "http://localhost:3000";
-  const concurrency = 10;
-  const durationMs = 2000; // 2 seconds
+  const concurrency = parseInt(process.env.LOAD_CONCURRENCY) || 100;
+  const durationMs = parseInt(process.env.LOAD_DURATION_MS) || 60000; // 1 minute (60,000 ms)
 
   console.log(`[+] Running Load/Performance tests against ${targetUrl}...`);
 
@@ -57,8 +57,12 @@ async function main() {
   const successRate = totalRequests ? ((successfulRequests / totalRequests) * 100).toFixed(1) : '0.0';
 
   let avgResponseTime = 0;
+  let minResponseTime = 0;
+  let maxResponseTime = 0;
   if (responseTimes.length > 0) {
     avgResponseTime = Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length);
+    minResponseTime = Math.min(...responseTimes);
+    maxResponseTime = Math.max(...responseTimes);
   }
 
   const steps = [];
@@ -78,7 +82,7 @@ async function main() {
 
   addStep('TC-LOAD-VAL-201', 'Target URL Availability under Load', `GET ${targetUrl}`, 'URL returns status 200', `Connection successful`, 'PASS');
   addStep('TC-LOAD-VAL-202', 'Concurrency Test', `Spawn ${concurrency} virtual workers`, 'Workers complete requests without crash', `Successfully spawned and completed`, 'PASS');
-  addStep('TC-LOAD-VAL-203', 'Average Latency Check', `Measure roundtrip response times`, 'Average response time < 500ms', `${avgResponseTime}ms`, avgResponseTime < 500 ? 'PASS' : 'FAIL');
+  addStep('TC-LOAD-VAL-203', 'Average Latency Check', `Measure roundtrip response times`, 'Average response time < 500ms', `Avg: ${avgResponseTime}ms | Min: ${minResponseTime}ms | Max: ${maxResponseTime}ms`, avgResponseTime < 500 ? 'PASS' : 'FAIL');
   addStep('TC-LOAD-VAL-204', 'Throughput Level (RPS)', `Calculate requests per second`, 'RPS > 10 req/sec', `${rps} req/sec`, parseFloat(rps) > 10 ? 'PASS' : 'FAIL');
   addStep('TC-LOAD-VAL-205', 'Load Success Rate', `Verify status codes of all responses`, 'Success rate > 95%', `${successRate}%`, parseFloat(successRate) > 95 ? 'PASS' : 'FAIL');
 

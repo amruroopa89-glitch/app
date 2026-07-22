@@ -56,18 +56,17 @@ export const generateExcelReport = async (summary, steps, outputPath) => {
   wb.modified = new Date();
 
   // ── Categorise steps ────────────────────────────────────────────────────────
-  const groups = {
-    ui  : steps.filter(s => s.id.includes('-UI')),
-    func: steps.filter(s => s.id.includes('-FUNC')),
-    unit: steps.filter(s => s.id.includes('-UNIT')),
-    val : steps.filter(s => s.id.includes('-VAL')),
-  };
-  const cats = [
-    { label:'UI / UX Testing',         key:'ui',   steps:groups.ui   },
-    { label:'Functional Testing',       key:'func', steps:groups.func },
-    { label:'Unit / Component Testing', key:'unit', steps:groups.unit },
-    { label:'Validation Testing',       key:'val',  steps:groups.val  },
-  ];
+  const moduleGroups = {};
+  for (const s of steps) {
+    const mod = s.module || 'General Tests';
+    if (!moduleGroups[mod]) moduleGroups[mod] = [];
+    moduleGroups[mod].push(s);
+  }
+  const cats = Object.keys(moduleGroups).map(name => ({
+    label: name,
+    key: name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+    steps: moduleGroups[name]
+  }));
 
   // ── Runtime metrics ─────────────────────────────────────────────────────────
   const totalPass  = steps.filter(s => s.status==='PASS').length;
@@ -228,31 +227,30 @@ export const generateExcelReport = async (summary, steps, outputPath) => {
   // TABS 2-5 — DETAIL LOG PER CATEGORY
   // ════════════════════════════════════════════════════════════════════════════
   const detailHeaders = [
-    { header:'Test ID',              key:'id',          width:14 },
-    { header:'Module / Feature',     key:'module',      width:22 },
-    { header:'Test Description',     key:'description', width:42 },
-    { header:'Action Taken',         key:'action',      width:40 },
-    { header:'Expected Outcome',     key:'expected',    width:40 },
-    { header:'Actual Result',        key:'actual',      width:48 },
-    { header:'Status',               key:'status',      width:12 },
-    { header:'Duration (ms)',        key:'duration',    width:14 },
-    { header:'Timestamp (UTC)',      key:'timestamp',   width:22 },
+    { header:'Test Case ID',          key:'id',            width:15 },
+    { header:'Module/Feature',        key:'module',        width:25 },
+    { header:'Test Scenario',         key:'scenario',      width:30 },
+    { header:'Test Case Description', key:'description',   width:40 },
+    { header:'Preconditions',         key:'preconditions', width:25 },
+    { header:'Test Steps',            key:'steps',         width:40 },
+    { header:'Test Data',             key:'data',          width:20 },
+    { header:'Expected Result',       key:'expected',      width:40 },
+    { header:'Actual Result',         key:'actual',        width:40 },
+    { header:'Status',                key:'status',        width:12 },
+    { header:'Severity',              key:'severity',      width:12 },
+    { header:'Priority',              key:'priority',      width:12 },
   ];
 
-  const sheetDefs = [
-    { name:'UI-UX Tests',        steps:groups.ui   },
-    { name:'Functional Tests',   steps:groups.func },
-    { name:'Unit Tests',         steps:groups.unit },
-    { name:'Validation Tests',   steps:groups.val  },
-  ];
+  const sheetDefs = cats.map(c => ({ name: c.label, steps: c.steps }));
 
   sheetDefs.forEach(({ name, steps: sheetSteps }) => {
-    const wsD = wb.addWorksheet(name);
+    const cleanName = name.replace(/[*?:\\/\[\]]/g, '-').slice(0, 31);
+    const wsD = wb.addWorksheet(cleanName);
     wsD.views = [{ showGridLines:true, state:'frozen', ySplit:2 }];
 
     // sheet banner
     wsD.getRow(1).height = 28;
-    wsD.mergeCells(`A1:I1`);
+    wsD.mergeCells(`A1:L1`);
     const shBanner = wsD.getCell('A1');
     shBanner.value     = `🌱  Green Harvest Buddy — ${name}  (${sheetSteps.length} cases)`;
     shBanner.font      = font({ size:12, bold:true, color:{ argb:C.white } });
@@ -279,22 +277,29 @@ export const generateExcelReport = async (summary, steps, outputPath) => {
       const rowBg = isAlt ? C.grey : C.white;
 
       const vals = [
-        s.id, s.module, s.description, s.action, s.expected,
-        s.actual, s.status, s.duration,
-        s.timestamp ? s.timestamp.substring(11,19) : '',
+        s.id || '',
+        s.module || '',
+        s.scenario || s.description || '',
+        s.description || '',
+        s.preconditions || 'N/A',
+        s.steps || s.action || '',
+        s.data || 'None',
+        s.expected || '',
+        s.actual || '',
+        s.status || 'PASS',
+        s.severity || 'Medium',
+        s.priority || 'P1'
       ];
       vals.forEach((v, c) => {
         const cell = wsD.getCell(rNum, c+1);
         cell.value     = v;
         cell.font      = font();
         cell.border    = border(C.rowBorder);
-        cell.alignment = { vertical:'middle', wrapText: c>=2 && c<=5 };
+        cell.alignment = { vertical:'middle', wrapText: c>=2 && c<=8 };
 
-        if (c===0) cell.alignment.horizontal = 'center';
-        if (c===7) { cell.alignment.horizontal='right'; cell.numFmt='#,##0'; }
-        if (c===8) cell.alignment.horizontal = 'center';
+        if (c===0 || c===9 || c===10 || c===11) cell.alignment.horizontal = 'center';
 
-        if (c===6) {
+        if (c===9) {
           const ok = s.status==='PASS';
           cell.fill = fill(ok ? C.lightGreen : C.lightRed);
           cell.font = font({ bold:true, color:{ argb: ok ? C.green : C.red } });
