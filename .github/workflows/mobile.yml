@@ -1,0 +1,136 @@
+name: Mobile CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  VITE_SUPABASE_URL: "https://agvxymhumrrrwstfyuvk.supabase.co"
+  VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_hsYnQuuXXTZulmg2AG67SQ_NogYXAkQ"
+  TEST_COUNT: "400"
+  FORCE_SIMULATION: "true"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 1: Build Android Application & Run JUnit Tests
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-and-test-android:
+    name: Build & Test Android (Capacitor)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm ci || npm install
+
+      - name: Run Linter
+        run: npm run lint
+
+      - name: Build Mobile Web Assets
+        run: npx vite build --config vite.mobile.config.ts
+
+      - name: Sync Capacitor Assets to Android
+        run: npx cap sync android
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Cache Gradle Packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Run Android Unit Tests
+        working-directory: android
+        run: ./gradlew testDebugUnitTest --no-daemon --stacktrace
+
+      - name: Build Debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload Android Unit Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-unit-test-reports
+          path: android/app/build/reports/tests/testDebugUnitTest/
+          retention-days: 7
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: green-harvest-buddy-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2: Appium Python E2E Simulation Tests
+  # ─────────────────────────────────────────────────────────────────────────────
+  appium-simulation-tests:
+    name: Appium Python E2E Simulation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Frontend Dependencies
+        run: npm ci || npm install
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+          cache-dependency-path: appium-tests/requirements.txt
+
+      - name: Install Python Dependencies
+        run: |
+          cd appium-tests
+          pip install -r requirements.txt
+
+      - name: Run Appium Python Mobile Tests
+        run: |
+          cd appium-tests
+          python tests/e2e_test.py
+        env:
+          TEST_URL: http://localhost:3000
+          TEST_COUNT: "400"
+          REPORT_PREFIX: "TC-MOB"
+          FORCE_SIMULATION: "true"
+          CI: "true"
+
+      - name: Upload Appium Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: appium-android-report
+          path: appium-tests/reports/appium-android-report.xlsx
+          retention-days: 7
