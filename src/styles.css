@@ -98,11 +98,37 @@
   --gradient-ocean: linear-gradient(135deg, oklch(0.6 0.18 220), oklch(0.72 0.16 195));
   --gradient-grape: linear-gradient(135deg, oklch(0.55 0.2 290), oklch(0.65 0.18 260));
   --gradient-fire: linear-gradient(135deg, oklch(0.7 0.22 30), oklch(0.6 0.24 10));
-  --gradient-sunrise: linear-gradient(135deg, oklch(0.85 0.16 85), oklch(0.78 0.18 60), oklch(0.72 0.2 45));
-  --gradient-rainforest: linear-gradient(135deg, oklch(0.55 0.16 145), oklch(0.62 0.18 155), oklch(0.72 0.14 170));
-  --gradient-auth: linear-gradient(160deg, oklch(0.45 0.16 145), oklch(0.52 0.18 135), oklch(0.6 0.16 80), oklch(0.72 0.14 50));
-  --gradient-welcome: linear-gradient(115deg, oklch(0.83 0.2 135), oklch(0.82 0.17 85) 52%, oklch(0.82 0.19 70));
-  --gradient-welcome-action: linear-gradient(100deg, oklch(0.75 0.2 135), oklch(0.82 0.2 75) 42%, oklch(0.67 0.24 355));
+  --gradient-sunrise: linear-gradient(
+    135deg,
+    oklch(0.85 0.16 85),
+    oklch(0.78 0.18 60),
+    oklch(0.72 0.2 45)
+  );
+  --gradient-rainforest: linear-gradient(
+    135deg,
+    oklch(0.55 0.16 145),
+    oklch(0.62 0.18 155),
+    oklch(0.72 0.14 170)
+  );
+  --gradient-auth: linear-gradient(
+    160deg,
+    oklch(0.45 0.16 145),
+    oklch(0.52 0.18 135),
+    oklch(0.6 0.16 80),
+    oklch(0.72 0.14 50)
+  );
+  --gradient-welcome: linear-gradient(
+    115deg,
+    oklch(0.83 0.2 135),
+    oklch(0.82 0.17 85) 52%,
+    oklch(0.82 0.19 70)
+  );
+  --gradient-welcome-action: linear-gradient(
+    100deg,
+    oklch(0.75 0.2 135),
+    oklch(0.82 0.2 75) 42%,
+    oklch(0.67 0.24 355)
+  );
   --welcome-glow: oklch(0.98 0.06 85 / 0.32);
   --welcome-panel: oklch(0.99 0.01 95 / 0.94);
   --welcome-ink: oklch(0.3 0.07 65);
@@ -111,7 +137,7 @@
   --blob-1: oklch(0.78 0.14 85 / 0.22);
   --blob-2: oklch(0.7 0.12 145 / 0.18);
   --blob-3: oklch(0.82 0.1 230 / 0.18);
-  --blob-4: oklch(0.75 0.16 45 / 0.20);
+  --blob-4: oklch(0.75 0.16 45 / 0.2);
   --shadow-soft: 0 8px 24px -8px oklch(0.52 0.16 145 / 0.25);
   --shadow-card: 0 4px 16px -4px oklch(0.22 0.04 150 / 0.08);
   --chart-1: oklch(0.646 0.222 41.116);

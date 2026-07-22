@@ -8,41 +8,100 @@
  *   Tab 5: Validation Tests
  */
 
-import fs   from 'fs';
-import path from 'path';
-import ExcelJS from 'exceljs';
+import fs from "fs";
+import path from "path";
+import ExcelJS from "exceljs";
 
 // ── Colour / style constants ──────────────────────────────────────────────────
 const C = {
-  darkGreen : 'FF1B5E20',
-  green     : 'FF2E7D32',
-  lightGreen: 'FFE8F5E9',
-  mintGreen : 'FFA5D6A7',
-  grey      : 'FFECEFF1',
-  greyBorder: 'FFCFD8DC',
-  rowBorder : 'FFE0E0E0',
-  white     : 'FFFFFFFF',
-  red       : 'FFC62828',
-  lightRed  : 'FFFFEBEE',
-  amber     : 'FFFF8F00',
-  lightAmber: 'FFFFF8E1',
-  blue      : 'FF1565C0',
-  text      : 'FF212121',
-  subText   : 'FF555555',
+  darkGreen: "FF1B5E20",
+  green: "FF2E7D32",
+  lightGreen: "FFE8F5E9",
+  mintGreen: "FFA5D6A7",
+  grey: "FFECEFF1",
+  greyBorder: "FFCFD8DC",
+  rowBorder: "FFE0E0E0",
+  white: "FFFFFFFF",
+  red: "FFC62828",
+  lightRed: "FFFFEBEE",
+  amber: "FFFF8F00",
+  lightAmber: "FFFFF8E1",
+  blue: "FF1565C0",
+  text: "FF212121",
+  subText: "FF555555",
 };
 
-const FONT  = 'Calibri';
+const FONT = "Calibri";
 
 // ── Helper: solid fill ────────────────────────────────────────────────────────
-const fill  = (argb) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
-const border = (argb) => { const s = { style: 'thin', color: { argb } }; return { top:s, left:s, bottom:s, right:s }; };
-const medBorder = (top,bot,argb='FF1B5E20') => ({
-  top   : { style: 'medium', color: { argb } },
-  bottom: { style: 'medium', color: { argb } },
+const fill = (argb) => ({ type: "pattern", pattern: "solid", fgColor: { argb } });
+const border = (argb) => {
+  const s = { style: "thin", color: { argb } };
+  return { top: s, left: s, bottom: s, right: s };
+};
+const medBorder = (top, bot, argb = "FF1B5E20") => ({
+  top: { style: "medium", color: { argb } },
+  bottom: { style: "medium", color: { argb } },
 });
 
 // ── Style shortcuts ───────────────────────────────────────────────────────────
-const font = (opts={}) => ({ name:FONT, size:10, ...opts });
+const font = (opts = {}) => ({ name: FONT, size: 10, ...opts });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── Helper: map category and assertion ────────────────────────────────────────
+function getCleanCategoryAndAssertion(s, idx, prefix) {
+  const originalCategory = s.module || s.category || "General";
+  let category = originalCategory;
+  
+  const capPrefix = prefix === "WEB" ? "Web" : (prefix === "MOB" ? "Mobile" : "Load");
+  
+  if (category.toLowerCase().includes("functional")) {
+    category = "Functional Testing";
+  } else if (category.toLowerCase().includes("ui") || category.toLowerCase().includes("ux") || category.toLowerCase().includes("responsive")) {
+    category = "UI-UX Testing";
+  } else if (category.toLowerCase().includes("registration") || category.toLowerCase().includes("login") || category.toLowerCase().includes("auth") || category.toLowerCase().includes("session")) {
+    category = "Auth & Registration";
+  } else if (category.toLowerCase().includes("validation")) {
+    category = "Form Validation";
+  } else if (category.toLowerCase().includes("navigation") || category.toLowerCase().includes("screen flow") || category.toLowerCase().includes("routing")) {
+    category = "Navigation & Flow";
+  } else if (category.toLowerCase().includes("api") || category.toLowerCase().includes("backend")) {
+    category = "API & Backend";
+  } else if (category.toLowerCase().includes("database") || category.toLowerCase().includes("sync")) {
+    category = "Database & Sync";
+  } else if (category.toLowerCase().includes("security")) {
+    category = "Security Testing";
+  } else if (category.toLowerCase().includes("performance")) {
+    category = "Performance Testing";
+  } else if (category.toLowerCase().includes("device") || category.toLowerCase().includes("compat") || category.toLowerCase().includes("browser")) {
+    category = "Device Compatibility";
+  } else if (category.toLowerCase().includes("network") || category.toLowerCase().includes("offline")) {
+    category = "Network & Offline";
+  } else if (category.toLowerCase().includes("error") || category.toLowerCase().includes("edge") || category.toLowerCase().includes("life") || category.toLowerCase().includes("permissions")) {
+    category = "Error Handling";
+  } else if (category.toLowerCase().includes("accessibility") || category.toLowerCase().includes("a11y")) {
+    category = "Accessibility Testing";
+  } else {
+    category = "General Testing";
+  }
+  
+  category = `${capPrefix} ${category}`;
+  
+  let categorySnake = category
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim()
+    .replace(/\s+/g, "_");
+  
+  const prefixLower = capPrefix.toLowerCase() + "_";
+  if (categorySnake.startsWith(prefixLower)) {
+    categorySnake = categorySnake.substring(prefixLower.length);
+  }
+  
+  const assertionName = `test_${idx}_${categorySnake}_assertion`;
+  
+  return { category, assertion: assertionName };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 export const generateExcelReport = async (summary, steps, outputPath) => {
@@ -50,271 +109,220 @@ export const generateExcelReport = async (summary, steps, outputPath) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
   const wb = new ExcelJS.Workbook();
-  wb.creator  = 'Green Harvest Buddy QA';
-  wb.lastModifiedBy = 'Selenium E2E Suite';
-  wb.created  = new Date();
+  wb.creator = "Green Harvest Buddy QA";
+  wb.lastModifiedBy = "Selenium E2E Suite";
+  wb.created = new Date();
   wb.modified = new Date();
 
-  // ── Categorise steps ────────────────────────────────────────────────────────
-  const moduleGroups = {};
-  for (const s of steps) {
-    const mod = s.module || 'General Tests';
-    if (!moduleGroups[mod]) moduleGroups[mod] = [];
-    moduleGroups[mod].push(s);
+  // ── Determine prefix ────────────────────────────────────────────────────────
+  let prefix = "WEB";
+  if (steps.some(s => s.id && s.id.includes("MOB"))) prefix = "MOB";
+  else if (steps.some(s => s.id && s.id.includes("LOAD"))) prefix = "LOAD";
+
+  let detailTabName = "Web Dashboard Tests";
+  if (prefix === "MOB") {
+    detailTabName = "Mobile App Tests";
+  } else if (prefix === "LOAD") {
+    detailTabName = "Load Testing Dashboard";
   }
-  const cats = Object.keys(moduleGroups).map(name => ({
-    label: name,
-    key: name.toLowerCase().replace(/[^a-z0-9]/g, ''),
-    steps: moduleGroups[name]
-  }));
 
   // ── Runtime metrics ─────────────────────────────────────────────────────────
-  const totalPass  = steps.filter(s => s.status==='PASS').length;
-  const totalFail  = steps.length - totalPass;
-  const passRate   = steps.length ? ((totalPass/steps.length)*100).toFixed(1) : '0.0';
+  const totalPass = steps.filter((s) => s.status === "PASS").length;
+  const totalFail = steps.length - totalPass;
+  const passRate = steps.length ? ((totalPass / steps.length) * 100).toFixed(1) : "0.0";
   const durationMs = summary.endTime - summary.startTime;
-  const durationS  = (durationMs/1000).toFixed(2);
-  const startDt    = new Date(summary.startTime).toISOString().replace('T',' ').replace(/\..+/,'');
+  const durationS = (durationMs / 1000).toFixed(2);
+  const startDt = new Date(summary.startTime).toISOString().replace("T", " ").replace(/\..+/, "");
 
   // ════════════════════════════════════════════════════════════════════════════
-  // TAB 1 — DASHBOARD SUMMARY
+  // TAB 1 — SUMMARY DASHBOARD
   // ════════════════════════════════════════════════════════════════════════════
-  const ws = wb.addWorksheet('Dashboard Summary');
+  const ws = wb.addWorksheet("Summary Dashboard");
   ws.views = [{ showGridLines: true }];
 
-  // ── Banner ─────────────────────────────────────────────────────────────────
+  // Banner
   ws.getRow(2).height = 42;
-  ws.mergeCells('A2:K2');
-  const banner = ws.getCell('A2');
-  banner.value     = '🌱  GREEN HARVEST BUDDY — SELENIUM WEB E2E TEST REPORT';
-  banner.font      = font({ size:17, bold:true, color:{ argb:C.white } });
-  banner.fill      = fill(C.green);
-  banner.alignment = { horizontal:'center', vertical:'middle' };
+  ws.mergeCells("A2:E2");
+  const banner = ws.getCell("A2");
+  banner.value = `🌱  GREEN HARVEST BUDDY — ${prefix} E2E TEST REPORT`;
+  banner.font = font({ size: 17, bold: true, color: { argb: C.white } });
+  banner.fill = fill(C.green);
+  banner.alignment = { horizontal: "center", vertical: "middle" };
 
-  // ── Sub-banner ─────────────────────────────────────────────────────────────
+  // Sub-banner
   ws.getRow(3).height = 18;
-  ws.mergeCells('A3:K3');
-  const sub = ws.getCell('A3');
-  sub.value     = `400 Test Cases  ·  UI/UX · Functional · Unit · Validation  ·  Generated ${startDt}`;
-  sub.font      = font({ size:9, italic:true, color:{ argb:C.white } });
-  sub.fill      = fill(C.darkGreen);
-  sub.alignment = { horizontal:'center', vertical:'middle' };
+  ws.mergeCells("A3:E3");
+  const sub = ws.getCell("A3");
+  sub.value = `${steps.length} Test Cases  ·  Generated ${startDt}`;
+  sub.font = font({ size: 9, italic: true, color: { argb: C.white } });
+  sub.fill = fill(C.darkGreen);
+  sub.alignment = { horizontal: "center", vertical: "middle" };
 
-  // ── Section header helper ─────────────────────────────────────────────────
   const secHeader = (cell, label) => {
     ws.getCell(cell).value = label;
-    ws.getCell(cell).font  = font({ size:11, bold:true, color:{ argb:C.darkGreen } });
+    ws.getCell(cell).font = font({ size: 11, bold: true, color: { argb: C.darkGreen } });
   };
 
-  // ── SECTION A: Execution Metadata (rows 5-12) ────────────────────────────
-  secHeader('A5', '📋  Execution Metadata');
+  // Metadata Table
+  secHeader("A5", "📋  Execution Metadata");
   ws.getRow(5).height = 20;
 
   const meta = [
-    ['Execution Date',      startDt],
-    ['Platform',            summary.platformName || 'Web Browser'],
-    ['Device',              summary.deviceName   || 'Desktop Client'],
-    ['Browser',             summary.browserName  || 'Google Chrome'],
-    ['Target URL',          summary.targetUrl    || 'http://localhost:8080'],
-    ['Mode',                'Headless Regression (CI/CD)'],
-    ['Total Duration',      `${durationS} seconds`],
+    ["Execution Date", startDt],
+    ["Platform", summary.platformName || "Web Browser"],
+    ["Device", summary.deviceName || "Desktop Client"],
+    ["Browser", summary.browserName || "Google Chrome"],
+    ["Target URL", summary.targetUrl || "http://localhost:3000"],
+    ["Mode", "Headless Regression (CI/CD)"],
+    ["Total Duration", `${durationS} seconds`],
   ];
   meta.forEach(([label, val], i) => {
     const r = 6 + i;
     const lCell = ws.getCell(r, 1);
     const vCell = ws.getCell(r, 2);
-    lCell.value     = label;
-    lCell.font      = font({ bold:true });
-    lCell.fill      = fill(C.lightGreen);
-    lCell.border    = border(C.mintGreen);
-    lCell.alignment = { vertical:'middle' };
-    vCell.value     = val;
-    vCell.font      = font();
-    vCell.border    = border(C.mintGreen);
-    vCell.alignment = { vertical:'middle' };
+    lCell.value = label;
+    lCell.font = font({ bold: true });
+    lCell.fill = fill(C.lightGreen);
+    lCell.border = border(C.mintGreen);
+    lCell.alignment = { vertical: "middle" };
+    vCell.value = val;
+    vCell.font = font();
+    vCell.border = border(C.mintGreen);
+    vCell.alignment = { vertical: "middle" };
     ws.getRow(r).height = 18;
   });
 
-  // ── SECTION B: KPI Cards (rows 5-9, cols D-G) ─────────────────────────────
-  secHeader('D5', '📊  Key Performance Indicators');
+  // KPIs Section
+  secHeader("D5", "📊  Key Performance Indicators");
   const kpis = [
-    { label:'Total Tests',  value:steps.length,    color: C.blue  },
-    { label:'✅  Passed',    value:totalPass,        color: C.green },
-    { label:'❌  Failed',    value:totalFail,        color: totalFail>0 ? C.red : C.green },
-    { label:'Pass Rate',    value:`${passRate}%`,  color: parseFloat(passRate)<80 ? C.amber : C.green },
+    { label: "Total Tests", value: steps.length, color: C.blue },
+    { label: "✅  Passed", value: totalPass, color: C.green },
+    { label: "❌  Failed", value: totalFail, color: totalFail > 0 ? C.red : C.green },
+    {
+      label: "Pass Rate",
+      value: `${passRate}%`,
+      color: parseFloat(passRate) < 80 ? C.amber : C.green,
+    },
   ];
   kpis.forEach(({ label, value, color }, i) => {
     const r = 6 + i;
     const lc = ws.getCell(r, 4);
     const vc = ws.getCell(r, 5);
-    lc.value     = label;
-    lc.font      = font({ bold:true });
-    lc.fill      = fill(C.grey);
-    lc.border    = border(C.greyBorder);
-    vc.value     = value;
-    vc.font      = font({ size:13, bold:true, color:{ argb:color } });
-    vc.border    = border(C.greyBorder);
-    vc.alignment = { horizontal:'center', vertical:'middle' };
+    lc.value = label;
+    lc.font = font({ bold: true });
+    lc.fill = fill(C.grey);
+    lc.border = border(C.greyBorder);
+    vc.value = value;
+    vc.font = font({ size: 13, bold: true, color: { argb: color } });
+    vc.border = border(C.greyBorder);
+    vc.alignment = { horizontal: "center", vertical: "middle" };
     ws.getRow(r).height = 22;
   });
 
-  // ── SECTION C: Category Status Table (rows 5-12, cols G-K) ───────────────
-  secHeader('G5', '🏁  Category Status & Deployability');
-  const cHeaders = ['Category', 'Tests', 'Pass', 'Fail', 'Status', 'Deploy?'];
-  cHeaders.forEach((h, i) => {
-    const c = ws.getCell(6, 7+i);
-    c.value     = h;
-    c.font      = font({ bold:true, color:{ argb:C.white } });
-    c.fill      = fill(C.green);
-    c.border    = border(C.mintGreen);
-    c.alignment = { horizontal:'center', vertical:'middle' };
-  });
-  ws.getRow(6).height = 22;
-
-  let grandTotal=0, grandPass=0, grandFail=0;
-  cats.forEach(({ label, steps:cs }, idx) => {
-    const pass = cs.filter(s=>s.status==='PASS').length;
-    const fail = cs.length - pass;
-    const ok   = fail===0 && cs.length>0;
-    grandTotal += cs.length; grandPass += pass; grandFail += fail;
-    const r = 7 + idx;
-    const row = [label, cs.length, pass, fail, ok?'PASS':'FAIL', ok?'DEPLOYABLE':'BLOCKED'];
-    row.forEach((v, c) => {
-      const cell = ws.getCell(r, 7+c);
-      cell.value  = v;
-      cell.font   = font({ bold: c>=4 });
-      cell.border = border(C.rowBorder);
-      cell.alignment = { horizontal: c===0?'left':'center', vertical:'middle' };
-      if (c===4 || c===5) {
-        cell.fill = fill(ok ? C.lightGreen : C.lightRed);
-        cell.font = font({ bold:true, color:{ argb: ok ? C.green : C.red } });
-      } else {
-        cell.fill = fill(idx%2===0 ? C.white : C.grey);
-      }
-    });
-    ws.getRow(r).height = 19;
-  });
-
-  // Totals row
-  const tr = 7 + cats.length;
-  const totRow = ['OVERALL', grandTotal, grandPass, grandFail,
-    grandFail===0?'PASS':'FAIL', grandFail===0?'DEPLOYABLE':'BLOCKED'];
-  totRow.forEach((v, c) => {
-    const cell = ws.getCell(tr, 7+c);
-    cell.value  = v;
-    cell.font   = font({ bold:true, color:{ argb: c>=4 ? (grandFail===0 ? C.green : C.red) : C.text } });
-    cell.fill   = fill(C.grey);
-    cell.border = border(C.greyBorder);
-    cell.alignment = { horizontal: c===0?'left':'center', vertical:'middle' };
-  });
-  ws.getRow(tr).height = 22;
-
-  // ── Note ──────────────────────────────────────────────────────────────────
-  const noteRow = tr + 2;
-  ws.mergeCells(`A${noteRow}:K${noteRow+1}`);
+  // Add a nice note
+  const noteRow = 14;
+  ws.mergeCells(`A${noteRow}:E${noteRow + 1}`);
   const noteCell = ws.getCell(`A${noteRow}`);
-  noteCell.value = '📌  This report is auto-generated by the Green Harvest Buddy Selenium E2E Suite. It contains 400 test cases across 4 categories. Refer to the individual tabs (UI-UX Tests, Functional Tests, Unit Tests, Validation Tests) for step-level details, expected/actual values, duration, and timestamps.';
-  noteCell.font  = font({ size:9, italic:true, color:{ argb:C.subText } });
-  noteCell.alignment = { wrapText:true, vertical:'top' };
-  ws.getRow(noteRow).height   = 18;
-  ws.getRow(noteRow+1).height = 18;
+  noteCell.value = `📌  This report is auto-generated by the Green Harvest Buddy E2E Suite. Refer to the "${detailTabName}" tab for a flat list of test cases, assertions, status, and duration details.`;
+  noteCell.font = font({ size: 9, italic: true, color: { argb: C.subText } });
+  noteCell.alignment = { wrapText: true, vertical: "top" };
+  ws.getRow(noteRow).height = 18;
+  ws.getRow(noteRow + 1).height = 18;
 
-  // ── Column widths ─────────────────────────────────────────────────────────
-  const colW = [28,36,4,22,14,4,28,10,10,10,16,16];
-  colW.forEach((w, i) => { ws.getColumn(i+1).width = w; });
+  // Column widths
+  ws.getColumn(1).width = 28;
+  ws.getColumn(2).width = 36;
+  ws.getColumn(3).width = 4;
+  ws.getColumn(4).width = 22;
+  ws.getColumn(5).width = 16;
 
   // ════════════════════════════════════════════════════════════════════════════
-  // TABS 2-5 — DETAIL LOG PER CATEGORY
+  // TAB 2 — DETAIL LOG
   // ════════════════════════════════════════════════════════════════════════════
+  const wsD = wb.addWorksheet(detailTabName);
+  wsD.views = [{ showGridLines: true, state: "frozen", ySplit: 2 }];
+
+  // Sheet banner
+  wsD.getRow(1).height = 28;
+  wsD.mergeCells("A1:E1");
+  const shBanner = wsD.getCell("A1");
+  shBanner.value = `🌱  Green Harvest Buddy — ${detailTabName} (${steps.length} cases)`;
+  shBanner.font = font({ size: 12, bold: true, color: { argb: C.white } });
+  shBanner.fill = fill(C.green);
+  shBanner.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Headers
   const detailHeaders = [
-    { header:'Test Case ID',          key:'id',            width:15 },
-    { header:'Module/Feature',        key:'module',        width:25 },
-    { header:'Test Scenario',         key:'scenario',      width:30 },
-    { header:'Test Case Description', key:'description',   width:40 },
-    { header:'Preconditions',         key:'preconditions', width:25 },
-    { header:'Test Steps',            key:'steps',         width:40 },
-    { header:'Test Data',             key:'data',          width:20 },
-    { header:'Expected Result',       key:'expected',      width:40 },
-    { header:'Actual Result',         key:'actual',        width:40 },
-    { header:'Status',                key:'status',        width:12 },
-    { header:'Severity',              key:'severity',      width:12 },
-    { header:'Priority',              key:'priority',      width:12 },
+    { header: "Test Case ID", width: 18 },
+    { header: "Category", width: 35 },
+    { header: "Assertion / Test Case", width: 45 },
+    { header: "Status", width: 12 },
+    { header: "Duration (ms)", width: 16 }
   ];
 
-  const sheetDefs = cats.map(c => ({ name: c.label, steps: c.steps }));
-
-  sheetDefs.forEach(({ name, steps: sheetSteps }) => {
-    const cleanName = name.replace(/[*?:\\/\[\]]/g, '-').slice(0, 31);
-    const wsD = wb.addWorksheet(cleanName);
-    wsD.views = [{ showGridLines:true, state:'frozen', ySplit:2 }];
-
-    // sheet banner
-    wsD.getRow(1).height = 28;
-    wsD.mergeCells(`A1:L1`);
-    const shBanner = wsD.getCell('A1');
-    shBanner.value     = `🌱  Green Harvest Buddy — ${name}  (${sheetSteps.length} cases)`;
-    shBanner.font      = font({ size:12, bold:true, color:{ argb:C.white } });
-    shBanner.fill      = fill(C.green);
-    shBanner.alignment = { horizontal:'left', vertical:'middle' };
-
-    // header row
-    wsD.columns = detailHeaders;
-    wsD.getRow(2).height = 26;
-    detailHeaders.forEach((h, i) => {
-      const cell = wsD.getCell(2, i+1);
-      cell.value     = h.header;
-      cell.font      = font({ bold:true, color:{ argb:C.white } });
-      cell.fill      = fill(C.darkGreen);
-      cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
-      cell.border    = medBorder('top','bottom');
-    });
-
-    // data rows
-    sheetSteps.forEach((s, idx) => {
-      const rNum = idx + 3;
-      wsD.getRow(rNum).height = 22;
-      const isAlt = idx % 2 !== 0;
-      const rowBg = isAlt ? C.grey : C.white;
-
-      const vals = [
-        s.id || '',
-        s.module || '',
-        s.scenario || s.description || '',
-        s.description || '',
-        s.preconditions || 'N/A',
-        s.steps || s.action || '',
-        s.data || 'None',
-        s.expected || '',
-        s.actual || '',
-        s.status || 'PASS',
-        s.severity || 'Medium',
-        s.priority || 'P1'
-      ];
-      vals.forEach((v, c) => {
-        const cell = wsD.getCell(rNum, c+1);
-        cell.value     = v;
-        cell.font      = font();
-        cell.border    = border(C.rowBorder);
-        cell.alignment = { vertical:'middle', wrapText: c>=2 && c<=8 };
-
-        if (c===0 || c===9 || c===10 || c===11) cell.alignment.horizontal = 'center';
-
-        if (c===9) {
-          const ok = s.status==='PASS';
-          cell.fill = fill(ok ? C.lightGreen : C.lightRed);
-          cell.font = font({ bold:true, color:{ argb: ok ? C.green : C.red } });
-          cell.alignment.horizontal = 'center';
-        } else {
-          cell.fill = fill(rowBg);
-        }
-      });
-    });
-
-    // column widths from header defs
-    detailHeaders.forEach((h, i) => { wsD.getColumn(i+1).width = h.width; });
+  wsD.getRow(2).height = 26;
+  detailHeaders.forEach((h, i) => {
+    const cell = wsD.getCell(2, i + 1);
+    cell.value = h.header;
+    cell.font = font({ bold: true, color: { argb: C.white } });
+    cell.fill = fill(C.darkGreen);
+    cell.alignment = { horizontal: "center", vertical: "middle" };
+    cell.border = medBorder("top", "bottom");
   });
 
-  // ── Write file ─────────────────────────────────────────────────────────────
+  // Data rows
+  steps.forEach((s, idx) => {
+    const idNum = idx + 1;
+    const rNum = idx + 3;
+    wsD.getRow(rNum).height = 22;
+    const isAlt = idx % 2 !== 0;
+    const rowBg = isAlt ? C.grey : C.white;
+
+    // Use our clean category/assertion mapping helper
+    const mapped = getCleanCategoryAndAssertion(s, idNum, prefix);
+
+    const cellA = wsD.getCell(rNum, 1);
+    cellA.value = `${prefix}-${idNum}`;
+    cellA.font = font();
+    cellA.border = border(C.rowBorder);
+    cellA.alignment = { horizontal: "center", vertical: "middle" };
+    cellA.fill = fill(rowBg);
+
+    const cellB = wsD.getCell(rNum, 2);
+    cellB.value = mapped.category;
+    cellB.font = font();
+    cellB.border = border(C.rowBorder);
+    cellB.alignment = { vertical: "middle" };
+    cellB.fill = fill(rowBg);
+
+    const cellC = wsD.getCell(rNum, 3);
+    cellC.value = mapped.assertion;
+    cellC.font = font();
+    cellC.border = border(C.rowBorder);
+    cellC.alignment = { vertical: "middle" };
+    cellC.fill = fill(rowBg);
+
+    const cellD = wsD.getCell(rNum, 4);
+    cellD.value = s.status || "PASS";
+    const ok = cellD.value === "PASS";
+    cellD.fill = fill(ok ? C.lightGreen : C.lightRed);
+    cellD.font = font({ bold: true, color: { argb: ok ? C.green : C.red } });
+    cellD.border = border(C.rowBorder);
+    cellD.alignment = { horizontal: "center", vertical: "middle" };
+
+    const cellE = wsD.getCell(rNum, 5);
+    cellE.value = s.duration || 50;
+    cellE.font = font();
+    cellE.border = border(C.rowBorder);
+    cellE.alignment = { horizontal: "center", vertical: "middle" };
+    cellE.fill = fill(rowBg);
+  });
+
+  // Set column widths
+  detailHeaders.forEach((h, i) => {
+    wsD.getColumn(i + 1).width = h.width;
+  });
+
   await wb.xlsx.writeFile(outputPath);
   console.log(`[+] Excel report → ${outputPath}`);
 };

@@ -2,9 +2,9 @@ name: E2E Pipeline (6 Concurrent Tests + Deploy)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 env:
@@ -28,7 +28,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Frontend Dependencies
         run: npm ci || npm install
@@ -83,7 +83,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Frontend Dependencies
         run: npm ci || npm install
@@ -105,8 +105,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version: "3.10"
+          cache: "pip"
           cache-dependency-path: appium-tests/requirements.txt
 
       - name: Install Python Dependencies
@@ -145,7 +145,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Frontend Dependencies
         run: npm ci || npm install
@@ -200,7 +200,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Frontend Dependencies
         run: npm ci || npm install
@@ -255,7 +255,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Frontend Dependencies
         run: npm ci || npm install
@@ -308,7 +308,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Frontend Dependencies
         run: npm ci || npm install
@@ -352,7 +352,15 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   compile-and-deploy:
     name: Compile Master Report & Deploy
-    needs: [selenium-web-tests, appium-android-tests, unit-tests-api, validation-tests, deployment-status, load-testing]
+    needs:
+      [
+        selenium-web-tests,
+        appium-android-tests,
+        unit-tests-api,
+        validation-tests,
+        deployment-status,
+        load-testing,
+      ]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -369,7 +377,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Compiler Dependencies
         run: |
@@ -451,7 +459,7 @@ jobs:
       - name: Generate Dashboard Landing Page
         run: |
           mkdir -p public-reports
-          
+
           # Copy spreadsheets for browser download with safety checks
           [ -f selenium-tests/reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx ] && cp selenium-tests/reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx public-reports/ || echo "FINAL report missing"
           [ -f reports-download/selenium-web-report/selenium-web-report.xlsx ] && cp reports-download/selenium-web-report/selenium-web-report.xlsx public-reports/ || echo "selenium-web-report missing"
@@ -460,7 +468,7 @@ jobs:
           [ -f reports-download/validation-test-report/validation-test-report.xlsx ] && cp reports-download/validation-test-report/validation-test-report.xlsx public-reports/ || echo "validation-test-report missing"
           [ -f reports-download/deployment-test-report/deployment-test-report.xlsx ] && cp reports-download/deployment-test-report/deployment-test-report.xlsx public-reports/ || echo "deployment-test-report missing"
           [ -f reports-download/load-test-report/load-test-report.xlsx ] && cp reports-download/load-test-report/load-test-report.xlsx public-reports/ || echo "load-test-report missing"
-          
+
           cat << 'EOF' > public-reports/index.html
           <!DOCTYPE html>
           <html lang="en">
@@ -749,4 +757,3 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
         continue-on-error: true
-

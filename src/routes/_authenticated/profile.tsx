@@ -6,24 +6,57 @@ import { LogOut, Save, FileText, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/profile")({
-  head: () => ({ meta: [{ title: "Farmer Profile" }, { name: "description", content: "Edit your farmer profile, soil values, and preferences." }] }),
+  head: () => ({
+    meta: [
+      { title: "Farmer Profile" },
+      { name: "description", content: "Edit your farmer profile, soil values, and preferences." },
+    ],
+  }),
   component: ProfilePage,
 });
 
 type Profile = {
-  full_name: string; age: number | ""; gender: string; mobile: string;
-  village: string; district: string; state: string;
-  farm_size: number | ""; farm_unit: string; language: string; irrigation_type: string;
-  soil_type: string; soil_ph: number | "";
-  nitrogen: number | ""; phosphorus: number | ""; potassium: number | "";
-  water_availability: string; current_season: string; crop_history: string;
+  full_name: string;
+  age: number | "";
+  gender: string;
+  mobile: string;
+  village: string;
+  district: string;
+  state: string;
+  farm_size: number | "";
+  farm_unit: string;
+  language: string;
+  irrigation_type: string;
+  soil_type: string;
+  soil_ph: number | "";
+  nitrogen: number | "";
+  phosphorus: number | "";
+  potassium: number | "";
+  water_availability: string;
+  current_season: string;
+  crop_history: string;
 };
 
 const empty: Profile = {
-  full_name: "", age: "", gender: "Male", mobile: "", village: "", district: "", state: "",
-  farm_size: "", farm_unit: "acres", language: "English", irrigation_type: "Drip",
-  soil_type: "Loamy", soil_ph: "", nitrogen: "", phosphorus: "", potassium: "",
-  water_availability: "Medium", current_season: "Kharif", crop_history: "",
+  full_name: "",
+  age: "",
+  gender: "Male",
+  mobile: "",
+  village: "",
+  district: "",
+  state: "",
+  farm_size: "",
+  farm_unit: "acres",
+  language: "English",
+  irrigation_type: "Drip",
+  soil_type: "Loamy",
+  soil_ph: "",
+  nitrogen: "",
+  phosphorus: "",
+  potassium: "",
+  water_availability: "Medium",
+  current_season: "Kharif",
+  crop_history: "",
 };
 
 function ProfilePage() {
@@ -38,9 +71,16 @@ function ProfilePage() {
       const { data } = await supabase.from("profiles").select("*").maybeSingle();
       if (data) {
         setP({
-          full_name: data.full_name ?? "", age: data.age ?? "", gender: data.gender ?? "Male", mobile: data.mobile ?? "",
-          village: data.village ?? "", district: data.district ?? "", state: data.state ?? "",
-          farm_size: data.farm_size ?? "", farm_unit: data.farm_unit ?? "acres", language: data.language ?? "English",
+          full_name: data.full_name ?? "",
+          age: data.age ?? "",
+          gender: data.gender ?? "Male",
+          mobile: data.mobile ?? "",
+          village: data.village ?? "",
+          district: data.district ?? "",
+          state: data.state ?? "",
+          farm_size: data.farm_size ?? "",
+          farm_unit: data.farm_unit ?? "acres",
+          language: data.language ?? "English",
           irrigation_type: data.irrigation_type ?? "Drip",
           soil_type: data.soil_type ?? "Loamy",
           soil_ph: data.soil_ph ?? "",
@@ -52,7 +92,10 @@ function ProfilePage() {
           crop_history: data.crop_history ?? "",
         });
       }
-      const { data: sch } = await supabase.from("government_schemes").select("title, body").order("title");
+      const { data: sch } = await supabase
+        .from("government_schemes")
+        .select("title, body")
+        .order("title");
       if (sch) {
         setSchemes(sch);
       }
@@ -90,36 +133,54 @@ function ProfilePage() {
   const useGPS = () => {
     if (!navigator.geolocation) return toast.error("GPS not available in this browser");
     toast.info("Fetching your location…");
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
-        const j = await r.json();
-        const a = j.address || {};
-        setP((prev) => ({
-          ...prev,
-          village: a.village || a.hamlet || a.town || a.suburb || prev.village,
-          district: a.state_district || a.county || a.city_district || prev.district,
-          state: a.state || prev.state,
-        }));
-        toast.success("Location filled from GPS 📍");
-      } catch {
-        toast.error("Couldn't look up address. Please enter manually.");
-      }
-    }, (e) => toast.error("GPS denied: " + e.message), { enableHighAccuracy: true, timeout: 10000 });
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`,
+          );
+          const j = await r.json();
+          const a = j.address || {};
+          setP((prev) => ({
+            ...prev,
+            village: a.village || a.hamlet || a.town || a.suburb || prev.village,
+            district: a.state_district || a.county || a.city_district || prev.district,
+            state: a.state || prev.state,
+          }));
+          toast.success("Location filled from GPS 📍");
+        } catch {
+          toast.error("Couldn't look up address. Please enter manually.");
+        }
+      },
+      (e) => toast.error("GPS denied: " + e.message),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
   };
 
-  if (loading) return <AppLayout variant="profile"><div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div></AppLayout>;
+  if (loading)
+    return (
+      <AppLayout variant="profile">
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
 
   return (
     <AppLayout variant="profile">
-      <div className="rounded-3xl p-5 text-primary-foreground shadow-[var(--shadow-soft)]" style={{ background: "var(--gradient-primary)" }}>
+      <div
+        className="rounded-3xl p-5 text-primary-foreground shadow-[var(--shadow-soft)]"
+        style={{ background: "var(--gradient-primary)" }}
+      >
         <div className="flex items-center gap-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-3xl font-bold backdrop-blur">
             {(p.full_name || "F")[0].toUpperCase()}
           </div>
           <div>
             <h1 className="text-xl font-bold">{p.full_name || "Your profile"}</h1>
-            <p className="text-xs opacity-90">{[p.village, p.district, p.state].filter(Boolean).join(", ") || "Add your location"}</p>
+            <p className="text-xs opacity-90">
+              {[p.village, p.district, p.state].filter(Boolean).join(", ") || "Add your location"}
+            </p>
           </div>
         </div>
       </div>
@@ -127,43 +188,130 @@ function ProfilePage() {
       <form onSubmit={save} className="mt-5 space-y-4">
         <Card title="👤 Personal">
           <Grid>
-            <Field label="Full name" value={p.full_name} onChange={(v) => setP({ ...p, full_name: v })} />
+            <Field
+              label="Full name"
+              value={p.full_name}
+              onChange={(v) => setP({ ...p, full_name: v })}
+            />
             <Field label="Mobile" value={p.mobile} onChange={(v) => setP({ ...p, mobile: v })} />
             <NumField label="Age" value={p.age} onChange={(v) => setP({ ...p, age: v })} />
-            <SelectField label="Gender" value={p.gender} options={["Male","Female","Other"]} onChange={(v) => setP({ ...p, gender: v })} />
+            <SelectField
+              label="Gender"
+              value={p.gender}
+              options={["Male", "Female", "Other"]}
+              onChange={(v) => setP({ ...p, gender: v })}
+            />
           </Grid>
         </Card>
 
         <Card title="📍 Location & farm">
-          <button type="button" onClick={useGPS} className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-semibold text-primary">
+          <button
+            type="button"
+            onClick={useGPS}
+            className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-semibold text-primary"
+          >
             <MapPin className="h-3.5 w-3.5" /> Use my GPS location
           </button>
           <Grid>
             <Field label="Village" value={p.village} onChange={(v) => setP({ ...p, village: v })} />
-            <Field label="District" value={p.district} onChange={(v) => setP({ ...p, district: v })} />
+            <Field
+              label="District"
+              value={p.district}
+              onChange={(v) => setP({ ...p, district: v })}
+            />
             <Field label="State" value={p.state} onChange={(v) => setP({ ...p, state: v })} />
-            <NumField label="Farm size" value={p.farm_size} onChange={(v) => setP({ ...p, farm_size: v })} step={0.1} />
-            <SelectField label="Unit" value={p.farm_unit} options={["acres","hectares"]} onChange={(v) => setP({ ...p, farm_unit: v })} />
-            <SelectField label="Irrigation" value={p.irrigation_type} options={["Drip","Sprinkler","Flood","Rain-fed","Canal"]} onChange={(v) => setP({ ...p, irrigation_type: v })} />
-            <SelectField label="Language" value={p.language} options={["English","Hindi","Telugu","Tamil","Kannada","Marathi","Bengali","Gujarati"]} onChange={(v) => setP({ ...p, language: v })} />
+            <NumField
+              label="Farm size"
+              value={p.farm_size}
+              onChange={(v) => setP({ ...p, farm_size: v })}
+              step={0.1}
+            />
+            <SelectField
+              label="Unit"
+              value={p.farm_unit}
+              options={["acres", "hectares"]}
+              onChange={(v) => setP({ ...p, farm_unit: v })}
+            />
+            <SelectField
+              label="Irrigation"
+              value={p.irrigation_type}
+              options={["Drip", "Sprinkler", "Flood", "Rain-fed", "Canal"]}
+              onChange={(v) => setP({ ...p, irrigation_type: v })}
+            />
+            <SelectField
+              label="Language"
+              value={p.language}
+              options={[
+                "English",
+                "Hindi",
+                "Telugu",
+                "Tamil",
+                "Kannada",
+                "Marathi",
+                "Bengali",
+                "Gujarati",
+              ]}
+              onChange={(v) => setP({ ...p, language: v })}
+            />
           </Grid>
         </Card>
 
         <Card title="🌱 Soil & Crop Values">
           <Grid>
-            <SelectField label="Soil Type" value={p.soil_type} options={["Black", "Red", "Sandy", "Clay", "Loamy"]} onChange={(v) => setP({ ...p, soil_type: v })} />
-            <NumField label="Soil pH" value={p.soil_ph} onChange={(v) => setP({ ...p, soil_ph: v })} step={0.1} />
-            <NumField label="Nitrogen (N)" value={p.nitrogen} onChange={(v) => setP({ ...p, nitrogen: v })} />
-            <NumField label="Phosphorus (P)" value={p.phosphorus} onChange={(v) => setP({ ...p, phosphorus: v })} />
-            <NumField label="Potassium (K)" value={p.potassium} onChange={(v) => setP({ ...p, potassium: v })} />
-            <SelectField label="Water availability" value={p.water_availability} options={["Low","Medium","High"]} onChange={(v) => setP({ ...p, water_availability: v })} />
-            <SelectField label="Current season" value={p.current_season} options={["Kharif","Rabi","Zaid","Summer"]} onChange={(v) => setP({ ...p, current_season: v })} />
-            <Field label="Crop history" value={p.crop_history} onChange={(v) => setP({ ...p, crop_history: v })} />
+            <SelectField
+              label="Soil Type"
+              value={p.soil_type}
+              options={["Black", "Red", "Sandy", "Clay", "Loamy"]}
+              onChange={(v) => setP({ ...p, soil_type: v })}
+            />
+            <NumField
+              label="Soil pH"
+              value={p.soil_ph}
+              onChange={(v) => setP({ ...p, soil_ph: v })}
+              step={0.1}
+            />
+            <NumField
+              label="Nitrogen (N)"
+              value={p.nitrogen}
+              onChange={(v) => setP({ ...p, nitrogen: v })}
+            />
+            <NumField
+              label="Phosphorus (P)"
+              value={p.phosphorus}
+              onChange={(v) => setP({ ...p, phosphorus: v })}
+            />
+            <NumField
+              label="Potassium (K)"
+              value={p.potassium}
+              onChange={(v) => setP({ ...p, potassium: v })}
+            />
+            <SelectField
+              label="Water availability"
+              value={p.water_availability}
+              options={["Low", "Medium", "High"]}
+              onChange={(v) => setP({ ...p, water_availability: v })}
+            />
+            <SelectField
+              label="Current season"
+              value={p.current_season}
+              options={["Kharif", "Rabi", "Zaid", "Summer"]}
+              onChange={(v) => setP({ ...p, current_season: v })}
+            />
+            <Field
+              label="Crop history"
+              value={p.crop_history}
+              onChange={(v) => setP({ ...p, crop_history: v })}
+            />
           </Grid>
         </Card>
 
-        <button disabled={saving} className="flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold text-primary-foreground shadow-[var(--shadow-soft)] disabled:opacity-60" style={{ background: "var(--gradient-primary)" }}>
-          {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />} Save profile
+        <button
+          disabled={saving}
+          className="flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold text-primary-foreground shadow-[var(--shadow-soft)] disabled:opacity-60"
+          style={{ background: "var(--gradient-primary)" }}
+        >
+          {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}{" "}
+          Save profile
         </button>
       </form>
 
@@ -182,7 +330,10 @@ function ProfilePage() {
         </div>
       </section>
 
-      <button onClick={signOut} className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-card p-4 text-sm font-medium text-destructive">
+      <button
+        onClick={signOut}
+        className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-card p-4 text-sm font-medium text-destructive"
+      >
         <LogOut className="h-5 w-5" /> Sign out
       </button>
     </AppLayout>
@@ -197,29 +348,77 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
     </section>
   );
 }
-function Grid({ children }: { children: React.ReactNode }) { return <div className="grid grid-cols-2 gap-3">{children}</div>; }
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function Grid({ children }: { children: React.ReactNode }) {
+  return <div className="grid grid-cols-2 gap-3">{children}</div>;
+}
+function Field({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <div className="col-span-1 space-y-1">
       <label className="text-xs font-semibold text-muted-foreground">{label}</label>
-      <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+      />
     </div>
   );
 }
-function NumField({ label, value, onChange, step = 1 }: { label: string; value: number | ""; onChange: (v: number | "") => void; step?: number }) {
+function NumField({
+  label,
+  value,
+  onChange,
+  step = 1,
+}: {
+  label: string;
+  value: number | "";
+  onChange: (v: number | "") => void;
+  step?: number;
+}) {
   return (
     <div className="col-span-1 space-y-1">
       <label className="text-xs font-semibold text-muted-foreground">{label}</label>
-      <input type="number" step={step} value={value} onChange={(e) => onChange(e.target.value === "" ? "" : parseFloat(e.target.value))} className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+      <input
+        type="number"
+        step={step}
+        value={value}
+        onChange={(e) => onChange(e.target.value === "" ? "" : parseFloat(e.target.value))}
+        className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+      />
     </div>
   );
 }
-function SelectField({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) {
+function SelectField({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+}) {
   return (
     <div className="col-span-1 space-y-1">
       <label className="text-xs font-semibold text-muted-foreground">{label}</label>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary">
-        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+      >
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
       </select>
     </div>
   );

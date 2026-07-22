@@ -80,17 +80,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "AI Crop Recommendation" },
-      { name: "description", content: "Smart crop, weather and farming guidance for every farmer." },
+      {
+        name: "description",
+        content: "Smart crop, weather and farming guidance for every farmer.",
+      },
       { name: "author", content: "AI Crop Recommendation" },
       { property: "og:title", content: "AI Crop Recommendation" },
-      { property: "og:description", content: "Smart crop, weather and farming guidance for every farmer." },
+      {
+        property: "og:description",
+        content: "Smart crop, weather and farming guidance for every farmer.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@AICropApp" },
       { name: "twitter:title", content: "AI Crop Recommendation" },
-      { name: "twitter:description", content: "Smart crop, weather and farming guidance for every farmer." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4e389877-0ac0-480f-bcb9-daf709ed69cc/id-preview-766b0322--8852322a-6a84-46af-8bfe-ecfdac343138.lovable.app-1780590640559.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4e389877-0ac0-480f-bcb9-daf709ed69cc/id-preview-766b0322--8852322a-6a84-46af-8bfe-ecfdac343138.lovable.app-1780590640559.png" },
+      {
+        name: "twitter:description",
+        content: "Smart crop, weather and farming guidance for every farmer.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4e389877-0ac0-480f-bcb9-daf709ed69cc/id-preview-766b0322--8852322a-6a84-46af-8bfe-ecfdac343138.lovable.app-1780590640559.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4e389877-0ac0-480f-bcb9-daf709ed69cc/id-preview-766b0322--8852322a-6a84-46af-8bfe-ecfdac343138.lovable.app-1780590640559.png",
+      },
     ],
     links: [
       {
@@ -123,7 +140,9 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
       router.invalidate();
       queryClient.invalidateQueries();
     });

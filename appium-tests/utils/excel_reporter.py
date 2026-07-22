@@ -56,8 +56,59 @@ def _font(**kw):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+def get_clean_category_and_assertion(s, idx, prefix):
+    original_category = s.get("module", s.get("category", "General"))
+    category = original_category
+    
+    cap_prefix = "Web" if prefix == "WEB" else ("Mobile" if prefix == "MOB" else "Load")
+    
+    cat_lower = category.lower()
+    if "functional" in cat_lower:
+        category = "Functional Testing"
+    elif "ui" in cat_lower or "ux" in cat_lower or "responsive" in cat_lower:
+        category = "UI-UX Testing"
+    elif "registration" in cat_lower or "login" in cat_lower or "auth" in cat_lower or "session" in cat_lower:
+        category = "Auth & Registration"
+    elif "validation" in cat_lower:
+        category = "Form Validation"
+    elif "navigation" in cat_lower or "screen flow" in cat_lower or "routing" in cat_lower:
+        category = "Navigation & Flow"
+    elif "api" in cat_lower or "backend" in cat_lower:
+        category = "API & Backend"
+    elif "database" in cat_lower or "sync" in cat_lower:
+        category = "Database & Sync"
+    elif "security" in cat_lower:
+        category = "Security Testing"
+    elif "performance" in cat_lower:
+        category = "Performance Testing"
+    elif "device" in cat_lower or "compat" in cat_lower or "browser" in cat_lower:
+        category = "Device Compatibility"
+    elif "network" in cat_lower or "offline" in cat_lower:
+        category = "Network & Offline"
+    elif "error" in cat_lower or "edge" in cat_lower or "life" in cat_lower or "permissions" in cat_lower:
+        category = "Error Handling"
+    elif "accessibility" in cat_lower or "a11y" in cat_lower:
+        category = "Accessibility Testing"
+    else:
+        category = "General Testing"
+        
+    category = f"{cap_prefix} {category}"
+    
+    # Create snake_case category name for assertion scenario
+    category_snake = "".join([c for c in category.lower() if c.isalnum() or c.isspace()]).strip().replace(" ", "_")
+    
+    prefix_lower = cap_prefix.lower() + "_"
+    if category_snake.startswith(prefix_lower):
+        category_snake = category_snake[len(prefix_lower):]
+        
+    assertion_name = f"test_{idx}_{category_snake}_assertion"
+    
+    return category, assertion_name
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 def generate_excel_report(summary: dict, steps: list, output_path: str):
-    """Create the multi-tab Excel report."""
+    """Create the simplified E2E Excel report with Summary Dashboard and flat Detail tab."""
 
     dir_name = os.path.dirname(output_path)
     if dir_name:
@@ -65,18 +116,18 @@ def generate_excel_report(summary: dict, steps: list, output_path: str):
 
     wb = Workbook()
 
-    # Group dynamically by module/category field
-    module_groups = {}
-    for s in steps:
-        mod = s.get("module", "General Tests")
-        if mod not in module_groups:
-            module_groups[mod] = []
-        module_groups[mod].append(s)
+    # Determine prefix
+    prefix = "WEB"
+    if any("MOB" in str(s.get("id", "")) for s in steps):
+        prefix = "MOB"
+    elif any("LOAD" in str(s.get("id", "")) for s in steps):
+        prefix = "LOAD"
 
-    cats = []
-    for name, s_list in module_groups.items():
-        key = "".join([c for c in name.lower() if c.isalnum()])
-        cats.append((name, key, s_list))
+    detail_tab_name = "Web Dashboard Tests"
+    if prefix == "MOB":
+        detail_tab_name = "Mobile App Tests"
+    elif prefix == "LOAD":
+        detail_tab_name = "Load Testing Dashboard"
 
     total = len(steps)
     passed = sum(1 for s in steps if s.get("status") == "PASS")
@@ -86,24 +137,25 @@ def generate_excel_report(summary: dict, steps: list, output_path: str):
     start_dt = datetime.fromtimestamp(summary.get("startTime", 0) / 1000.0).strftime("%Y-%m-%d %H:%M:%S")
 
     # ══════════════════════════════════════════════════════════════════════════
-    # TAB 1 — DASHBOARD SUMMARY
+    # TAB 1 — SUMMARY DASHBOARD
     # ══════════════════════════════════════════════════════════════════════════
     ws = wb.active
-    ws.title = "Dashboard Summary"
+    ws.title = "Summary Dashboard"
 
     # Banner
-    ws.merge_cells("A2:K2")
+    ws.merge_cells("A2:E2")
     ws.row_dimensions[2].height = 42
     b = ws["A2"]
-    b.value = "📱  GREEN HARVEST BUDDY — APPIUM MOBILE E2E TEST REPORT"
+    b.value = f"🌱  GREEN HARVEST BUDDY — {prefix} E2E TEST REPORT"
     b.font = _font(size=17, bold=True, color=_C["white"])
     b.fill = _fill(_C["green"])
     b.alignment = Alignment(horizontal="center", vertical="center")
 
-    ws.merge_cells("A3:K3")
+    # Sub-banner
+    ws.merge_cells("A3:E3")
     ws.row_dimensions[3].height = 18
     s3 = ws["A3"]
-    s3.value = f"400 Test Cases  ·  UI/UX · Functional · Unit · Validation  ·  Generated {start_dt}"
+    s3.value = f"{total} Test Cases  ·  Generated {start_dt}"
     s3.font = _font(size=9, italic=True, color=_C["white"])
     s3.fill = _fill(_C["dk_green"])
     s3.alignment = Alignment(horizontal="center", vertical="center")
@@ -116,11 +168,11 @@ def generate_excel_report(summary: dict, steps: list, output_path: str):
     sec("A5", "📋  Execution Metadata")
     meta = [
         ("Execution Date",  start_dt),
-        ("Platform",        summary.get("platformName", "Android")),
-        ("Device",          summary.get("deviceName", "Android Emulator")),
-        ("Browser",         summary.get("browserName", "Chrome")),
-        ("Target URL",      summary.get("targetUrl", "")),
-        ("Mode",            "Appium UiAutomator2 (CI/CD)"),
+        ("Platform",        summary.get("platformName", "Web Browser")),
+        ("Device",          summary.get("deviceName", "Desktop Client")),
+        ("Browser",         summary.get("browserName", "Google Chrome")),
+        ("Target URL",      summary.get("targetUrl", "http://localhost:3000")),
+        ("Mode",            "Headless Regression (CI/CD)"),
         ("Duration",        f"{dur_s:.2f} seconds"),
     ]
     for i, (label, val) in enumerate(meta):
@@ -146,143 +198,96 @@ def generate_excel_report(summary: dict, steps: list, output_path: str):
         lc.font = _font(bold=True); lc.fill = _fill(_C["grey"]); lc.border = _border(_C["grey_bdr"])
         vc = ws.cell(row=r, column=5, value=val)
         vc.font = _font(size=13, bold=True, color=color)
-        vc.alignment = Alignment(horizontal="center"); vc.border = _border(_C["grey_bdr"])
-
-    # ── Category Status ──────────────────────────────────────────────────────
-    sec("G5", "🏁  Category Status & Deployability")
-    c_headers = ["Category", "Tests", "Pass", "Fail", "Status", "Deploy?"]
-    for ci, h in enumerate(c_headers):
-        c = ws.cell(row=6, column=7 + ci, value=h)
-        c.font = _font(bold=True, color=_C["white"]); c.fill = _fill(_C["green"])
-        c.border = _border(_C["mint"]); c.alignment = Alignment(horizontal="center", vertical="center")
-    ws.row_dimensions[6].height = 22
-
-    g_total = g_pass = g_fail = 0
-    for idx, (label, _key, cat_steps) in enumerate(cats):
-        p = sum(1 for s in cat_steps if s.get("status") == "PASS")
-        f = len(cat_steps) - p
-        ok = f == 0 and len(cat_steps) > 0
-        g_total += len(cat_steps); g_pass += p; g_fail += f
-        r = 7 + idx
-        vals = [label, len(cat_steps), p, f, "PASS" if ok else "FAIL", "DEPLOYABLE" if ok else "BLOCKED"]
-        for ci, v in enumerate(vals):
-            c = ws.cell(row=r, column=7 + ci, value=v)
-            c.border = _border(_C["row_bdr"])
-            c.alignment = Alignment(horizontal="left" if ci == 0 else "center", vertical="center")
-            if ci >= 4:
-                c.fill = _fill(_C["lt_green"] if ok else _C["lt_red"])
-                c.font = _font(bold=True, color=_C["green"] if ok else _C["red"])
-            else:
-                c.fill = _fill(_C["white"] if idx % 2 == 0 else _C["grey"])
-                c.font = _font()
-        ws.row_dimensions[r].height = 19
-
-    # Overall row
-    tr = 7 + len(cats)
-    ok_all = g_fail == 0
-    for ci, v in enumerate(["OVERALL", g_total, g_pass, g_fail,
-                             "PASS" if ok_all else "FAIL",
-                             "DEPLOYABLE" if ok_all else "BLOCKED"]):
-        c = ws.cell(row=tr, column=7 + ci, value=v)
-        c.font = _font(bold=True, color=(_C["green"] if ok_all else _C["red"]) if ci >= 4 else _C["text"])
-        c.fill = _fill(_C["grey"]); c.border = _border(_C["grey_bdr"])
-        c.alignment = Alignment(horizontal="left" if ci == 0 else "center")
-    ws.row_dimensions[tr].height = 22
+        vc.alignment = Alignment(horizontal="center", vertical="center"); vc.border = _border(_C["grey_bdr"])
 
     # Note
-    nr = tr + 2
-    ws.merge_cells(f"A{nr}:K{nr+1}")
+    nr = 14
+    ws.merge_cells(f"A{nr}:E{nr+1}")
     nc = ws[f"A{nr}"]
-    nc.value = "📌  This report is auto-generated by the Green Harvest Buddy Appium E2E Suite. It contains 400 test cases across 4 categories. Refer to individual tabs for step-level details, screenshots, expected/actual values, and timestamps."
+    nc.value = f"📌  This report is auto-generated by the Green Harvest Buddy E2E Suite. Refer to the \"{detail_tab_name}\" tab for a flat list of test cases, assertions, status, and duration details."
     nc.font = _font(size=9, italic=True, color=_C["sub"])
     nc.alignment = Alignment(wrap_text=True, vertical="top")
 
-    for ci, w in enumerate([28, 36, 4, 22, 14, 4, 28, 10, 10, 10, 16, 16]):
-        ws.column_dimensions[get_column_letter(ci + 1)].width = w
+    # Column widths
+    ws.column_dimensions["A"].width = 28
+    ws.column_dimensions["B"].width = 36
+    ws.column_dimensions["C"].width = 4
+    ws.column_dimensions["D"].width = 22
+    ws.column_dimensions["E"].width = 16
 
     # ══════════════════════════════════════════════════════════════════════════
-    # TABS 2-5 — DETAIL LOGS
+    # TAB 2 — DETAIL LOG
     # ══════════════════════════════════════════════════════════════════════════
+    wd = wb.create_sheet(title=detail_tab_name)
+    wd.views.sheetView[0].showGridLines = True
+    wd.freeze_panes = "A3"
+
+    # Banner
+    wd.merge_cells("A1:E1")
+    wd.row_dimensions[1].height = 28
+    bn = wd["A1"]
+    bn.value = f"🌱  Green Harvest Buddy — {detail_tab_name}  ({total} cases)"
+    bn.font = _font(size=12, bold=True, color=_C["white"])
+    bn.fill = _fill(_C["green"])
+    bn.alignment = Alignment(horizontal="left", vertical="center")
+
     headers = [
-        ("Test Case ID",          15),
-        ("Module/Feature",        25),
-        ("Test Scenario",         30),
-        ("Test Case Description", 40),
-        ("Preconditions",         25),
-        ("Test Steps",            40),
-        ("Test Data",             20),
-        ("Expected Result",       40),
-        ("Actual Result",         40),
+        ("Test Case ID",          18),
+        ("Category",              35),
+        ("Assertion / Test Case", 45),
         ("Status",                12),
-        ("Severity",              12),
-        ("Priority",              12),
+        ("Duration (ms)",         16)
     ]
 
-    sheets = [(name, s_list) for name, _, s_list in cats]
+    # Header row
+    wd.row_dimensions[2].height = 26
+    for ci, (text, w) in enumerate(headers):
+        col_letter = get_column_letter(ci + 1)
+        wd.column_dimensions[col_letter].width = w
+        c = wd.cell(row=2, column=ci + 1, value=text)
+        c.font = _font(bold=True, color=_C["white"])
+        c.fill = _fill(_C["dk_green"])
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        c.border = _med_border()
 
-    for name, sheet_steps in sheets:
-        clean_name = "".join([c if c not in '*?:\\/[]' else '-' for c in name])[:31]
-        wd = wb.create_sheet(clean_name)
+    # Data rows
+    for ri, step in enumerate(steps):
+        rn = ri + 3
+        wd.row_dimensions[rn].height = 22
+        alt = ri % 2 != 0
+        bg = _C["grey"] if alt else _C["white"]
 
-        # Banner
-        wd.merge_cells("A1:L1")
-        wd.row_dimensions[1].height = 28
-        bn = wd["A1"]
-        bn.value = f"📱  Green Harvest Buddy — {name}  ({len(sheet_steps)} cases)"
-        bn.font = _font(size=12, bold=True, color=_C["white"])
-        bn.fill = _fill(_C["green"])
-        bn.alignment = Alignment(horizontal="left", vertical="center")
+        mapped_cat, mapped_assert = get_clean_category_and_assertion(step, ri + 1, prefix)
 
-        # Header row
-        wd.row_dimensions[2].height = 26
-        for ci, (text, w) in enumerate(headers):
-            col_letter = get_column_letter(ci + 1)
-            wd.column_dimensions[col_letter].width = w
-            c = wd.cell(row=2, column=ci + 1, value=text)
-            c.font = _font(bold=True, color=_C["white"])
-            c.fill = _fill(_C["dk_green"])
-            c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-            c.border = _med_border()
+        # ID
+        c = wd.cell(row=rn, column=1, value=f"{prefix}-{ri+1}")
+        c.font = _font(); c.border = _border(_C["row_bdr"]); c.fill = _fill(bg)
+        c.alignment = Alignment(horizontal="center", vertical="center")
 
-        # Data rows
-        for ri, step in enumerate(sheet_steps):
-            rn = ri + 3
-            wd.row_dimensions[rn].height = 22
-            alt = ri % 2 != 0
-            bg = _C["grey"] if alt else _C["white"]
+        # Category
+        c = wd.cell(row=rn, column=2, value=mapped_cat)
+        c.font = _font(); c.border = _border(_C["row_bdr"]); c.fill = _fill(bg)
+        c.alignment = Alignment(vertical="center")
 
-            vals = [
-                step.get("id", ""),
-                step.get("module", ""),
-                step.get("scenario", step.get("description", "")),
-                step.get("description", ""),
-                step.get("preconditions", "N/A"),
-                step.get("steps", step.get("action", "")),
-                step.get("data", "None"),
-                step.get("expected", ""),
-                step.get("actual", ""),
-                step.get("status", "PASS"),
-                step.get("severity", "Medium"),
-                step.get("priority", "P1"),
-            ]
+        # Assertion
+        c = wd.cell(row=rn, column=3, value=mapped_assert)
+        c.font = _font(); c.border = _border(_C["row_bdr"]); c.fill = _fill(bg)
+        c.alignment = Alignment(vertical="center")
 
-            for ci, v in enumerate(vals):
-                c = wd.cell(row=rn, column=ci + 1, value=v)
-                c.font = _font()
-                c.border = _border(_C["row_bdr"])
-                c.alignment = Alignment(vertical="center", wrap_text=2 <= ci <= 8)
-                if ci in (0, 9, 10, 11):
-                    c.alignment = Alignment(horizontal="center", vertical="center")
-                if ci == 9:
-                    ok = step.get("status") == "PASS"
-                    c.fill = _fill(_C["lt_green"] if ok else _C["lt_red"])
-                    c.font = _font(bold=True, color=_C["green"] if ok else _C["red"])
-                    c.alignment = Alignment(horizontal="center", vertical="center")
-                else:
-                    c.fill = _fill(bg)
+        # Status
+        status_val = step.get("status", "PASS")
+        c = wd.cell(row=rn, column=4, value=status_val)
+        ok = status_val == "PASS"
+        c.fill = _fill(_C["lt_green"] if ok else _C["lt_red"])
+        c.font = _font(bold=True, color=_C["green"] if ok else _C["red"])
+        c.border = _border(_C["row_bdr"])
+        c.alignment = Alignment(horizontal="center", vertical="center")
 
+        # Duration
+        dur_val = step.get("duration", 50)
+        c = wd.cell(row=rn, column=5, value=dur_val)
+        c.font = _font(); c.border = _border(_C["row_bdr"]); c.fill = _fill(bg)
+        c.alignment = Alignment(horizontal="center", vertical="center")
 
-
-    # Save
     wb.save(output_path)
     print(f"[+] Excel report -> {output_path}")

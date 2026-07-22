@@ -11,20 +11,23 @@ It is designed to automate visual alignment, authentication flows, weather/mandi
 To run these tests on your local machine, you must have Node.js and Google Chrome installed.
 
 ### 1. Node.js Environment Setup
-* Ensure **Node.js (v18+)** and `npm` are installed.
-* Navigate to the test directory (`selenium-tests`) and install dependencies:
+
+- Ensure **Node.js (v18+)** and `npm` are installed.
+- Navigate to the test directory (`selenium-tests`) and install dependencies:
   ```bash
   cd selenium-tests
   npm install
   ```
 
 ### 2. Browser & Driver Setup
-* Make sure **Google Chrome** is installed on your system.
-* ChromeDriver is handled automatically by modern Selenium WebDriver versions, so no separate chromedriver installation or path configuration is needed.
+
+- Make sure **Google Chrome** is installed on your system.
+- ChromeDriver is handled automatically by modern Selenium WebDriver versions, so no separate chromedriver installation or path configuration is needed.
 
 ### 3. Application Web Server
-* Ensure the target web application (e.g., the React/TanStack Start app) is running locally or deployed.
-* If running locally from the `green-harvest-buddy-main` directory:
+
+- Ensure the target web application (e.g., the React/TanStack Start app) is running locally or deployed.
+- If running locally from the `green-harvest-buddy-main` directory:
   ```bash
   npm run dev
   ```
@@ -36,13 +39,17 @@ To run these tests on your local machine, you must have Node.js and Google Chrom
 You can run the tests in either headless mode (for CI/CD pipeline compatibility) or headed mode (to watch the browser interact).
 
 ### 1. Execute in Headless Mode (Default)
+
 Run the default test runner from the `selenium-tests` folder:
+
 ```bash
 npm test
 ```
 
 ### 2. Execute in Headed Mode
+
 To watch the browser window execute the steps:
+
 ```bash
 npm run test:headed
 ```
@@ -53,22 +60,24 @@ npm run test:headed
 
 You can customize test endpoints and timing parameters inside `config.js` or by setting environment variables:
 
-* **`TARGET_URL`**: The web application URL (default: `http://localhost:3000`)
-* **`HEADLESS`**: Toggle headless browser execution (default: `true`)
-* **`TIMEOUTS`**: Explicit element polling wait timeouts
+- **`TARGET_URL`**: The web application URL (default: `http://localhost:3000`)
+- **`HEADLESS`**: Toggle headless browser execution (default: `true`)
+- **`TIMEOUTS`**: Explicit element polling wait timeouts
 
 ---
 
 ## 📁 Test Reports & Execution Logs
 
 Upon completing a test run, the suite compiles all execution details and outputs them to:
+
 ```filepath
 selenium-tests/reports/
 ```
 
 Inside this directory, you will find:
+
 1. **Excel Analysis Workbook** (`GreenHarvestBuddy_Selenium_E2E_<timestamp>.xlsx`):
-   * **Dashboard Summary Sheet**: Professional green-themed dashboard tracking KPIs (Total Steps, Passed, Failed, Pass Rate, Deployability Index).
-   * **Detailed Category Sheets**: 4 separate sheets (UI-UX Tests, Functional Tests, Unit Tests, Validation Tests) logging element targets, actions, expected vs actual results, execution timings, and conditional status highlights (`PASS` / `FAIL`).
+   - **Dashboard Summary Sheet**: Professional green-themed dashboard tracking KPIs (Total Steps, Passed, Failed, Pass Rate, Deployability Index).
+   - **Detailed Category Sheets**: 4 separate sheets (UI-UX Tests, Functional Tests, Unit Tests, Validation Tests) logging element targets, actions, expected vs actual results, execution timings, and conditional status highlights (`PASS` / `FAIL`).
 2. **Screenshots Directory** (`selenium-tests/reports/screenshots/`):
-   * Detailed viewport screenshots captured at each verification step.
+   - Detailed viewport screenshots captured at each verification step.

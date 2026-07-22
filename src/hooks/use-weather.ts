@@ -24,7 +24,7 @@ async function fetchWeather(location: string | null) {
   // 1. Geocode via Nominatim
   const geoRes = await fetch(
     `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1&countrycodes=in`,
-    { headers: { "Accept-Language": "en", "User-Agent": "GreenHarvestBuddy/1.0" } }
+    { headers: { "Accept-Language": "en", "User-Agent": "GreenHarvestBuddy/1.0" } },
   );
   const geoData = await geoRes.json();
   if (!geoData?.length) return null;
@@ -35,7 +35,7 @@ async function fetchWeather(location: string | null) {
   const weatherRes = await fetch(
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
       `&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,weather_code` +
-      `&daily=weather_code,temperature_2m_max&timezone=Asia%2FKolkata&forecast_days=5`
+      `&daily=weather_code,temperature_2m_max&timezone=Asia%2FKolkata&forecast_days=5`,
   );
   const w = await weatherRes.json();
 
@@ -71,10 +71,7 @@ export function useWeather() {
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("district,state")
-        .maybeSingle();
+      const { data } = await supabase.from("profiles").select("district,state").maybeSingle();
       return data;
     },
     staleTime: 5 * 60 * 1000,
@@ -91,7 +88,7 @@ export function useWeather() {
     queryKey: ["weather", location],
     queryFn: () => fetchWeather(location!),
     enabled: location !== undefined, // wait for profile to resolve
-    staleTime: 15 * 60 * 1000,      // cache 15 minutes
+    staleTime: 15 * 60 * 1000, // cache 15 minutes
     retry: 1,
   });
 

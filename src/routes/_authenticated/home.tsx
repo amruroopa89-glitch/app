@@ -22,7 +22,10 @@ export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
     meta: [
       { title: "Dashboard — AI Crop Recommendation" },
-      { name: "description", content: "Personalized farmer dashboard with weather, crops and AI tools." },
+      {
+        name: "description",
+        content: "Personalized farmer dashboard with weather, crops and AI tools.",
+      },
     ],
   }),
   component: Dashboard,
@@ -56,8 +59,7 @@ function Dashboard() {
 
   const name = profile?.full_name || "Farmer";
   const place =
-    [profile?.village, profile?.district].filter(Boolean).join(", ") ||
-    "Add your location";
+    [profile?.village, profile?.district].filter(Boolean).join(", ") || "Add your location";
 
   return (
     <AppLayout variant="home">
@@ -192,25 +194,23 @@ function Dashboard() {
           <h2 className="text-base font-semibold text-foreground">Mandi prices today</h2>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          {mandiLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-xl bg-muted/60 p-3 space-y-2">
-                <div className="h-3 animate-pulse rounded bg-muted" />
-                <div className="h-5 animate-pulse rounded bg-muted" />
-                <div className="h-3 animate-pulse rounded bg-muted" />
-              </div>
-            ))
-          ) : (
-            mandi?.map((m) => (
-              <div key={m.crop} className="rounded-xl bg-muted/60 p-3">
-                <div className="font-semibold text-foreground">{m.crop}</div>
-                <div className="text-base font-bold text-primary">{m.price}</div>
-                <div className={m.trend.startsWith("+") ? "text-green-600" : "text-destructive"}>
-                  {m.trend}
+          {mandiLoading
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-xl bg-muted/60 p-3 space-y-2">
+                  <div className="h-3 animate-pulse rounded bg-muted" />
+                  <div className="h-5 animate-pulse rounded bg-muted" />
+                  <div className="h-3 animate-pulse rounded bg-muted" />
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            : mandi?.map((m) => (
+                <div key={m.crop} className="rounded-xl bg-muted/60 p-3">
+                  <div className="font-semibold text-foreground">{m.crop}</div>
+                  <div className="text-base font-bold text-primary">{m.price}</div>
+                  <div className={m.trend.startsWith("+") ? "text-green-600" : "text-destructive"}>
+                    {m.trend}
+                  </div>
+                </div>
+              ))}
         </div>
       </section>
     </AppLayout>

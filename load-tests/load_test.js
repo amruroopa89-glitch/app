@@ -1,5 +1,3 @@
-
-
 const TARGET_URL = "http://localhost:8080/";
 const CONCURRENCY = 100; // 100 virtual users
 const DURATION_MS = 60000; // 1 minute
@@ -13,9 +11,9 @@ async function runLoadTest() {
   let totalRequests = 0;
   let successfulRequests = 0;
   let failedRequests = 0;
-  
+
   const responseTimes = [];
-  
+
   // Worker function
   async function worker() {
     while (Date.now() - startTime < DURATION_MS) {
@@ -23,11 +21,11 @@ async function runLoadTest() {
       try {
         const res = await fetch(TARGET_URL, {
           headers: {
-            'User-Agent': 'LoadTester/1.0'
-          }
+            "User-Agent": "LoadTester/1.0",
+          },
         });
         const duration = Date.now() - t0;
-        
+
         totalRequests++;
         if (res.ok) {
           successfulRequests++;
@@ -44,7 +42,7 @@ async function runLoadTest() {
 
   // Spawn concurrent workers
   const workers = Array.from({ length: CONCURRENCY }, () => worker());
-  
+
   // Wait for all workers to finish
   await Promise.all(workers);
 
@@ -54,7 +52,7 @@ async function runLoadTest() {
   // Calculate metrics
   const rps = (totalRequests / actualDurationSec).toFixed(1);
   const successRps = (successfulRequests / actualDurationSec).toFixed(1);
-  
+
   let avgResponseTime = 0;
   let minResponseTime = 0;
   let maxResponseTime = 0;

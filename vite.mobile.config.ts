@@ -6,7 +6,7 @@ import path from "path";
 
 // Mobile-specific Vite config — pure static SPA for Capacitor (no SSR)
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
+  const env = loadEnv(mode, process.cwd(), "");
 
   return {
     plugins: [react(), tsconfigPaths(), tailwindcss()],
@@ -39,21 +39,22 @@ export default defineConfig(({ mode }) => {
       "process.env.NODE_ENV": JSON.stringify("production"),
       // Inject Supabase env vars at build time
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
-        env.VITE_SUPABASE_URL || env.SUPABASE_URL || "https://agvxymhumrrrwstfyuvk.supabase.co"
+        env.VITE_SUPABASE_URL || env.SUPABASE_URL || "https://agvxymhumrrrwstfyuvk.supabase.co",
       ),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
-        env.VITE_SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_hsYnQuuXXTZulmg2AG67SQ_NogYXAkQ"
+        env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+          env.SUPABASE_PUBLISHABLE_KEY ||
+          "sb_publishable_hsYnQuuXXTZulmg2AG67SQ_NogYXAkQ",
       ),
       "import.meta.env.VITE_OPENROUTER_API_KEY": JSON.stringify(
-        env.OPENROUTER_API_KEY || env.VITE_OPENROUTER_API_KEY || ""
+        env.OPENROUTER_API_KEY || env.VITE_OPENROUTER_API_KEY || "",
       ),
       "import.meta.env.VITE_OPENROUTER_MODEL": JSON.stringify(
-        env.OPENROUTER_MODEL || env.VITE_OPENROUTER_MODEL || "openai/gpt-oss-20b:free"
+        env.OPENROUTER_MODEL || env.VITE_OPENROUTER_MODEL || "openai/gpt-oss-20b:free",
       ),
       "import.meta.env.VITE_OPENROUTER_VISION_MODEL": JSON.stringify(
-        env.OPENROUTER_VISION_MODEL || env.VITE_OPENROUTER_VISION_MODEL || "openrouter/free"
+        env.OPENROUTER_VISION_MODEL || env.VITE_OPENROUTER_VISION_MODEL || "openrouter/free",
       ),
     },
   };
 });
-

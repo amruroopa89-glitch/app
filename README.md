@@ -8,10 +8,10 @@ Welcome to the **Green Harvest Buddy** repository! This is a modern, responsive 
 
 Green Harvest Buddy is built with premium developer tools to ensure fast rendering, modular growth, and cross-platform portability:
 
-* **Frontend Framework**: [React 19](https://react.dev/) & [TanStack Start](https://tanstack.com/router/v1/docs/start/overview) (for seamless full-stack React application routing and Server Functions).
-* **Styling**: [TailwindCSS (v4)](https://tailwindcss.com/) for high-fidelity custom design systems, modern glassmorphism UI elements, and fast responsive layouts.
-* **Backend Database & Auth**: [Supabase](https://supabase.com/) for secure authentication, user profiles, and real-time database syncing.
-* **Mobile Shell Wrapper**: [Capacitor CLI](https://capacitorjs.com/) to build, compile, and bundle native iOS & Android applications from the single codebase.
+- **Frontend Framework**: [React 19](https://react.dev/) & [TanStack Start](https://tanstack.com/router/v1/docs/start/overview) (for seamless full-stack React application routing and Server Functions).
+- **Styling**: [TailwindCSS (v4)](https://tailwindcss.com/) for high-fidelity custom design systems, modern glassmorphism UI elements, and fast responsive layouts.
+- **Backend Database & Auth**: [Supabase](https://supabase.com/) for secure authentication, user profiles, and real-time database syncing.
+- **Mobile Shell Wrapper**: [Capacitor CLI](https://capacitorjs.com/) to build, compile, and bundle native iOS & Android applications from the single codebase.
 
 ---
 
@@ -68,23 +68,27 @@ This repository contains a world-class, automated E2E test suite running over **
 The test suite is divided into major sections:
 
 ### 1. Web E2E & Functional Testing (Selenium Node.js)
+
 Located in `selenium-tests/`, this suite automates interactions in Google Chrome:
-* **UI/UX Audits**: Verify layout alignment, responsive widths, and element coordinates.
-* **Functional Scenarios**: Form submittals, authentication, chatbots, and crop calculations.
-* **API Unit Tests**: Direct checks on service endpoints and validation rules.
-* **Validation Tests**: Input limits, boundary conditions, and file uploads.
-* **How to run locally**:
+
+- **UI/UX Audits**: Verify layout alignment, responsive widths, and element coordinates.
+- **Functional Scenarios**: Form submittals, authentication, chatbots, and crop calculations.
+- **API Unit Tests**: Direct checks on service endpoints and validation rules.
+- **Validation Tests**: Input limits, boundary conditions, and file uploads.
+- **How to run locally**:
   ```bash
   cd selenium-tests
   npm install
   npm test
   ```
-  *(For headed execution, run `npm run test:headed`)*
+  _(For headed execution, run `npm run test:headed`)_
 
 ### 2. Mobile App Testing (Appium Python)
+
 Located in `appium-tests/`, this suite runs tests against target mobile devices:
-* Emulates touch gestures, keyboard entry, and layout audits on mobile screens.
-* **How to run locally**:
+
+- Emulates touch gestures, keyboard entry, and layout audits on mobile screens.
+- **How to run locally**:
   1. Start the Appium Server:
      ```bash
      appium
@@ -97,16 +101,18 @@ Located in `appium-tests/`, this suite runs tests against target mobile devices:
      ```
 
 ### 3. Load & Performance Testing
-* Simulates high user traffic and measures response times.
-* **How to run locally**:
+
+- Simulates high user traffic and measures response times.
+- **How to run locally**:
   ```bash
   cd selenium-tests
   node tests/run_load_test.js reports/load-test-report.xlsx
   ```
 
 ### 4. Deployment Status Testing
-* Performs smoke tests on the application's build and runtime responsiveness.
-* **How to run locally**:
+
+- Performs smoke tests on the application's build and runtime responsiveness.
+- **How to run locally**:
   ```bash
   cd selenium-tests
   node tests/run_deployment_status.js reports/deployment-test-report.xlsx
@@ -117,6 +123,7 @@ Located in `appium-tests/`, this suite runs tests against target mobile devices:
 ## 📊 Consolidated Testing Reports & CI/CD Pipeline
 
 When a commit is pushed to the repository, the **E2E Pipeline** (`e2e.yml`) triggers automatically in GitHub Actions, running:
+
 1. **Selenium Web Tests** (400 cases)
 2. **Appium Android Tests** (400 cases)
 3. **Unit Tests** (400 cases)
@@ -125,7 +132,8 @@ When a commit is pushed to the repository, the **E2E Pipeline** (`e2e.yml`) trig
 6. **Load & Performance Testing**
 
 ### Report Compilation
-Once all concurrent testing jobs finish, the pipeline executes `compile_reports.js` to parse and merge the independent Excel spreadsheets into a single, beautiful master workbook: **`E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx`**. 
+
+Once all concurrent testing jobs finish, the pipeline executes `compile_reports.js` to parse and merge the independent Excel spreadsheets into a single, beautiful master workbook: **`E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx`**.
 
 This sheet includes a professional green-themed **KPI Dashboard** calculating the total tests run, final pass rates, and the application's overall **Deployability Index**.
 
