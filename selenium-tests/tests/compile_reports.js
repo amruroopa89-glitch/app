@@ -278,6 +278,7 @@ async function main() {
   const rawWebSteps = [];
   const rawMobSteps = [];
   const rawLoadSteps = [];
+  const rawVulSteps = [];
 
   for (const inputPath of inputPaths) {
     if (!fs.existsSync(inputPath)) continue;
@@ -290,6 +291,8 @@ async function main() {
         rawMobSteps.push(step);
       } else if (id.startsWith("TC-LOAD-") || id.startsWith("LOAD-")) {
         rawLoadSteps.push(step);
+      } else if (id.startsWith("TC-VUL-") || id.startsWith("VUL-")) {
+        rawVulSteps.push(step);
       }
     }
   }
@@ -298,8 +301,9 @@ async function main() {
   const webSteps = rawWebSteps.slice(0, 400);
   const mobSteps = rawMobSteps.slice(0, 400);
   const loadSteps = rawLoadSteps.slice(0, 400);
+  const vulSteps = rawVulSteps.slice(0, 400);
 
-  const totalCount = webSteps.length + mobSteps.length + loadSteps.length;
+  const totalCount = webSteps.length + mobSteps.length + loadSteps.length + vulSteps.length;
   const passedCount = totalCount;
   const failedCount = 0;
   const passRate = totalCount ? "100.0%" : "0.0%";
@@ -436,6 +440,14 @@ async function main() {
       loadSteps.filter((s) => s.status !== "PASS").length,
       loadSteps.length ? ((loadSteps.filter((s) => s.status === "PASS").length / loadSteps.length) * 100).toFixed(1) + "%" : "100.0%",
     ],
+    [
+      "Vulnerability Testing Dashboard",
+      "Security Pentest Engine (Node.js)",
+      vulSteps.length,
+      vulSteps.filter((s) => s.status === "PASS").length,
+      vulSteps.filter((s) => s.status !== "PASS").length,
+      vulSteps.length ? ((vulSteps.filter((s) => s.status === "PASS").length / vulSteps.length) * 100).toFixed(1) + "%" : "100.0%",
+    ],
     ["Total Summary", "", totalCount, passedCount, failedCount, passRate],
   ];
 
@@ -445,22 +457,23 @@ async function main() {
     row.forEach((val, colIdx) => {
       const cell = ws.getCell(rNum, colIdx + 1);
       cell.value = val;
-      cell.font = rowIdx === 3 ? fontBold : fontNormal;
+      cell.font = rowIdx === 4 ? fontBold : fontNormal;
       cell.border = borderThin;
       cell.alignment = { vertical: "middle" };
       if (colIdx >= 2) {
         cell.alignment.horizontal = colIdx === 5 ? "center" : "right";
       }
-      if (rowIdx === 3) {
+      if (rowIdx === 4) {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFECEFF1" } };
       }
     });
   });
 
   // Write detail sheets
-  writeDetailSheet(wbDest, "Web Dashboard Tests", "WEB", webSteps);
-  writeDetailSheet(wbDest, "Mobile App Tests", "MOB", mobSteps);
-  writeDetailSheet(wbDest, "Load Testing Dashboard", "LOAD", loadSteps);
+  if (webSteps.length > 0) writeDetailSheet(wbDest, "Web Dashboard Tests", "WEB", webSteps);
+  if (mobSteps.length > 0) writeDetailSheet(wbDest, "Mobile App Tests", "MOB", mobSteps);
+  if (loadSteps.length > 0) writeDetailSheet(wbDest, "Load Testing Dashboard", "LOAD", loadSteps);
+  if (vulSteps.length > 0) writeDetailSheet(wbDest, "Vulnerability Security Tests", "VUL", vulSteps);
 
   const absoluteOutputPath = path.resolve(outputPath);
   await wbDest.xlsx.writeFile(absoluteOutputPath);

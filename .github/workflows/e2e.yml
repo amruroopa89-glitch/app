@@ -348,10 +348,10 @@ jobs:
           retention-days: 7
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # Job 7: Vulnerability Testing (310 Security Test Cases)
+  # Job 7: Vulnerability Testing (400 Security Test Cases)
   # ─────────────────────────────────────────────────────────────────────────────
   vulnerability-testing:
-    name: Vulnerability Testing (310)
+    name: Vulnerability Testing (400)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -785,7 +785,7 @@ jobs:
                       <div class="report-card">
                           <div>
                               <h3>🔐 Vulnerability Testing</h3>
-                              <p class="report-desc">310 security test cases: auth bypass, injection, secrets, AI/LLM, mobile, RLS, and 3rd-party risks.</p>
+                              <p class="report-desc">400 security test cases: auth bypass, injection, secrets, AI/LLM, mobile, RLS, hardening, and 3rd-party risks.</p>
                           </div>
                           <a href="./vulnerability-test-report.xlsx" class="btn-secondary" download>Download Report</a>
                       </div>
