@@ -116,7 +116,7 @@ function AuthPage() {
             </div>
 
             {/* Email / password form */}
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-3">
+            <form onSubmit={submit} className="space-y-3">
               {mode === "signup" && (
                 <>
                   <Field
@@ -165,7 +165,6 @@ function AuthPage() {
                 type="submit"
                 id="email-submit-btn"
                 disabled={loading}
-                onClick={submit}
                 className="w-full rounded-xl py-3 font-semibold text-primary-foreground shadow-[var(--shadow-soft)] disabled:opacity-60"
                 style={{ background: "var(--gradient-primary)" }}
               >
@@ -263,8 +262,8 @@ function Field({
   autoComplete?: string;
 }) {
   return (
-    <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 focus-within:ring-2 focus-within:ring-primary/40 cursor-text">
-      <span className="text-muted-foreground pointer-events-none flex-shrink-0">{icon}</span>
+    <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 focus-within:ring-2 focus-within:ring-primary/40 cursor-text min-h-[52px]">
+      <span className="text-muted-foreground flex-shrink-0 pointer-events-none select-none">{icon}</span>
       <input
         id={id}
         type={type}
@@ -273,9 +272,13 @@ function Field({
         required={required}
         inputMode={inputMode}
         autoComplete={autoComplete}
+        autoCorrect="off"
+        autoCapitalize={type === "email" || inputMode === "email" ? "none" : undefined}
+        spellCheck={false}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full min-w-0 bg-transparent py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:outline-none"
+        className="w-full min-w-0 bg-transparent py-3.5 text-base text-foreground placeholder:text-muted-foreground outline-none focus:outline-none"
+        style={{ fontSize: "16px" }}
       />
-    </label>
+    </div>
   );
 }
