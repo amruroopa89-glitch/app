@@ -77,8 +77,8 @@ function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "var(--gradient-auth)" }}>
-      <div className="flex flex-1 items-center justify-center px-4 py-10">
+    <div className="min-h-screen flex flex-col overflow-y-auto pb-12" style={{ background: "var(--gradient-auth)" }}>
+      <div className="flex flex-1 items-center justify-center px-4 py-6">
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="mb-6 flex flex-col items-center text-primary-foreground">
@@ -120,34 +120,44 @@ function AuthPage() {
               {mode === "signup" && (
                 <>
                   <Field
+                    id="name-input"
                     icon={<User className="h-4 w-4" />}
                     placeholder="Full name"
                     value={name}
                     onChange={setName}
+                    autoComplete="name"
                   />
                   <Field
+                    id="mobile-input"
                     icon={<Phone className="h-4 w-4" />}
                     placeholder="Mobile"
                     value={mobile}
                     onChange={setMobile}
+                    inputMode="tel"
+                    autoComplete="tel"
                   />
                 </>
               )}
               <Field
+                id="email-input"
                 icon={<Mail className="h-4 w-4" />}
                 type="email"
                 placeholder="Email"
                 value={email}
                 onChange={setEmail}
+                inputMode="email"
+                autoComplete="email"
                 required
               />
               {mode !== "forgot" && (
                 <Field
+                  id="password-input"
                   icon={<Lock className="h-4 w-4" />}
                   type="password"
                   placeholder="Password (min 6 chars)"
                   value={password}
                   onChange={setPassword}
+                  autoComplete="current-password"
                   required
                 />
               )}
@@ -232,31 +242,40 @@ function AuthPage() {
 }
 
 function Field({
+  id,
   icon,
   type = "text",
   placeholder,
   value,
   onChange,
   required,
+  inputMode,
+  autoComplete,
 }: {
+  id?: string;
   icon: React.ReactNode;
   type?: string;
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
   required?: boolean;
+  inputMode?: "text" | "numeric" | "decimal" | "tel" | "search" | "email" | "url";
+  autoComplete?: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3">
-      <span className="text-muted-foreground">{icon}</span>
+    <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 focus-within:ring-2 focus-within:ring-primary/40 cursor-text">
+      <span className="text-muted-foreground pointer-events-none flex-shrink-0">{icon}</span>
       <input
+        id={id}
         type={type}
         placeholder={placeholder}
         value={value}
         required={required}
+        inputMode={inputMode}
+        autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1 bg-transparent py-3 text-sm outline-none"
+        className="w-full min-w-0 bg-transparent py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:outline-none"
       />
-    </div>
+    </label>
   );
 }

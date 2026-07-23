@@ -198,5 +198,22 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input, textarea, select {
+    color: var(--color-foreground) !important;
+    -webkit-text-fill-color: var(--color-foreground) !important;
+    caret-color: var(--color-primary) !important;
+    opacity: 1 !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    touch-action: manipulation;
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: var(--color-muted-foreground) !important;
+    -webkit-text-fill-color: var(--color-muted-foreground) !important;
+    opacity: 0.7 !important;
   }
 }

@@ -281,15 +281,34 @@ function Num({
   onChange: (v: number) => void;
   step?: number;
 }) {
+  const [val, setVal] = useState<string>(
+    value === undefined || value === null ? "" : String(value)
+  );
+
+  useEffect(() => {
+    setVal(value === undefined || value === null ? "" : String(value));
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setVal(raw);
+    const parsed = parseFloat(raw);
+    if (!isNaN(parsed)) {
+      onChange(parsed);
+    } else if (raw === "") {
+      onChange(0);
+    }
+  };
+
   return (
     <div className="space-y-1">
       <Label>{label}</Label>
       <input
         type="number"
         step={step}
-        value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+        value={val}
+        onChange={handleChange}
+        className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
       />
     </div>
   );

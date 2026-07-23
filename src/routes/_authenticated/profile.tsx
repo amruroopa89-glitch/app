@@ -382,15 +382,36 @@ function NumField({
   onChange: (v: number | "") => void;
   step?: number;
 }) {
+  const [val, setVal] = useState<string>(
+    value === "" || value === null || value === undefined ? "" : String(value)
+  );
+
+  useEffect(() => {
+    setVal(value === "" || value === null || value === undefined ? "" : String(value));
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setVal(raw);
+    if (raw === "") {
+      onChange("");
+    } else {
+      const parsed = parseFloat(raw);
+      if (!isNaN(parsed)) {
+        onChange(parsed);
+      }
+    }
+  };
+
   return (
     <div className="col-span-1 space-y-1">
       <label className="text-xs font-semibold text-muted-foreground">{label}</label>
       <input
         type="number"
         step={step}
-        value={value}
-        onChange={(e) => onChange(e.target.value === "" ? "" : parseFloat(e.target.value))}
-        className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+        value={val}
+        onChange={handleChange}
+        className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
       />
     </div>
   );
