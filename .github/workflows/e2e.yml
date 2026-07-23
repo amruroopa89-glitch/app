@@ -348,6 +348,62 @@ jobs:
           retention-days: 7
 
   # ─────────────────────────────────────────────────────────────────────────────
+  # Job 7: Vulnerability Testing (310 Security Test Cases)
+  # ─────────────────────────────────────────────────────────────────────────────
+  vulnerability-testing:
+    name: Vulnerability Testing (310)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Frontend Dependencies
+        run: npm ci || npm install
+
+      - name: Start Vite Development Server
+        run: |
+          npm run dev -- --port 3000 &
+          echo "[+] Waiting for Vite server to boot up on port 3000..."
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "[+] Vite server is active!"
+              break
+            fi
+            sleep 1
+          done
+        env:
+          PORT: 3000
+
+      - name: Install Selenium Web Test Dependencies
+        run: |
+          cd selenium-tests
+          npm install
+
+      - name: Run Vulnerability Tests
+        run: |
+          cd selenium-tests
+          node tests/run_vulnerability_tests.js reports/vulnerability-test-report.xlsx
+        env:
+          TEST_URL: http://localhost:3000
+          HEADLESS: true
+          REPORT_PREFIX: "TC-VUL"
+          VULN_DOC: "../vulnerability-test-cases.md"
+
+      - name: Upload Vulnerability Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vulnerability-test-report
+          path: selenium-tests/reports/vulnerability-test-report.xlsx
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # Final Job: Compile Master Report & Deploy
   # ─────────────────────────────────────────────────────────────────────────────
   compile-and-deploy:
@@ -360,6 +416,7 @@ jobs:
         validation-tests,
         deployment-status,
         load-testing,
+        vulnerability-testing,
       ]
     if: always()
     runs-on: ubuntu-latest
@@ -429,6 +486,13 @@ jobs:
           path: reports-download/load-test-report
         continue-on-error: true
 
+      - name: Download vulnerability-test-report
+        uses: actions/download-artifact@v4
+        with:
+          name: vulnerability-test-report
+          path: reports-download/vulnerability-test-report
+        continue-on-error: true
+
       - name: Run E2E Compiler
         run: |
           cd selenium-tests
@@ -439,7 +503,8 @@ jobs:
             ../reports-download/unit-test-report/unit-test-report.xlsx \
             ../reports-download/validation-test-report/validation-test-report.xlsx \
             ../reports-download/deployment-test-report/deployment-test-report.xlsx \
-            ../reports-download/load-test-report/load-test-report.xlsx
+            ../reports-download/load-test-report/load-test-report.xlsx \
+            ../reports-download/vulnerability-test-report/vulnerability-test-report.xlsx
         continue-on-error: true
 
       - name: Prepare full-e2e-report Artifact
@@ -468,6 +533,7 @@ jobs:
           [ -f reports-download/validation-test-report/validation-test-report.xlsx ] && cp reports-download/validation-test-report/validation-test-report.xlsx public-reports/ || echo "validation-test-report missing"
           [ -f reports-download/deployment-test-report/deployment-test-report.xlsx ] && cp reports-download/deployment-test-report/deployment-test-report.xlsx public-reports/ || echo "deployment-test-report missing"
           [ -f reports-download/load-test-report/load-test-report.xlsx ] && cp reports-download/load-test-report/load-test-report.xlsx public-reports/ || echo "load-test-report missing"
+          [ -f reports-download/vulnerability-test-report/vulnerability-test-report.xlsx ] && cp reports-download/vulnerability-test-report/vulnerability-test-report.xlsx public-reports/ || echo "vulnerability-test-report missing"
 
           cat << 'EOF' > public-reports/index.html
           <!DOCTYPE html>
@@ -715,6 +781,14 @@ jobs:
                               <p class="report-desc">Concurrency, throughput (RPS), and latency distribution stats under load.</p>
                           </div>
                           <a href="./load-test-report.xlsx" class="btn-secondary" download>Download Report</a>
+                      </div>
+
+                      <div class="report-card">
+                          <div>
+                              <h3>🔐 Vulnerability Testing</h3>
+                              <p class="report-desc">310 security test cases covering auth, injection, secrets, AI/LLM, mobile, and RLS vulnerabilities.</p>
+                          </div>
+                          <a href="./vulnerability-test-report.xlsx" class="btn-secondary" download>Download Report</a>
                       </div>
                   </div>
 
