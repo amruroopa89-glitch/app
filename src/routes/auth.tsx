@@ -276,8 +276,13 @@ function Field({
         autoCapitalize={type === "email" || inputMode === "email" ? "none" : undefined}
         spellCheck={false}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full min-w-0 bg-transparent py-3.5 text-base text-foreground placeholder:text-muted-foreground outline-none focus:outline-none"
-        style={{ fontSize: "16px" }}
+        className="w-full min-w-0 bg-transparent py-3.5 text-base outline-none focus:outline-none"
+        style={{ 
+          fontSize: "16px",
+          color: "rgb(34, 41, 35)",
+          WebkitTextFillColor: "rgb(34, 41, 35)",
+          caretColor: "rgb(82, 158, 73)"
+        }}
       />
     </div>
   );
