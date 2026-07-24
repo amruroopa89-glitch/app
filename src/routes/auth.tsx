@@ -268,21 +268,16 @@ function Field({
         id={id}
         type={type}
         placeholder={placeholder}
-        defaultValue={value}
+        value={value}
         required={required}
         inputMode={inputMode}
         autoComplete={autoComplete}
         autoCorrect="off"
         autoCapitalize={type === "email" || inputMode === "email" ? "none" : undefined}
         spellCheck={false}
-        onInput={(e) => onChange((e.target as HTMLInputElement).value)}
-        onBlur={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
         className="w-full min-w-0 bg-transparent py-3.5 text-base text-foreground placeholder:text-muted-foreground outline-none focus:outline-none"
-        style={{ 
-          fontSize: "16px",
-          WebkitTextFillColor: "var(--color-foreground)",
-          color: "var(--color-foreground)"
-        }}
+        style={{ fontSize: "16px" }}
       />
     </div>
   );
