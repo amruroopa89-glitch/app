@@ -241,6 +241,42 @@ function createMockSupabaseClient() {
     async resetPasswordForEmail(email: string, options: any) {
       return { data: {}, error: null };
     },
+    async signInWithOtp({ phone }: any) {
+      if (!phone) {
+        return { data: null, error: { message: "Phone number is required" } };
+      }
+      return { data: {}, error: null };
+    },
+    async verifyOtp({ phone, token }: any) {
+      if (!token || token.length !== 6) {
+        return { data: { user: null, session: null }, error: { message: "Please enter a valid 6-digit OTP" } };
+      }
+      const users = getMockUsers();
+      let user = users.find((u: any) => u.phone === phone || u.user_metadata?.mobile === phone);
+      if (!user) {
+        const userId = "mock-phone-user-" + Math.random().toString(36).substring(2, 11);
+        user = {
+          id: userId,
+          email: `${phone.replace(/[^0-9]/g, "")}@mobile.user`,
+          phone,
+          user_metadata: { mobile: phone, full_name: "Mobile Farmer" },
+        };
+        users.push(user);
+        saveMockUsers(users);
+        saveMockProfile(userId, {
+          full_name: "Mobile Farmer",
+          mobile: phone,
+          user_id: userId,
+        });
+      }
+      const session = {
+        access_token: "mock-phone-token-" + Math.random().toString(36).substring(2, 11),
+        user: { id: user.id, email: user.email, phone: user.phone, user_metadata: user.user_metadata },
+      };
+      saveMockSession(session);
+      setTimeout(() => triggerAuthChange("SIGNED_IN", session), 0);
+      return { data: { user: session.user, session }, error: null };
+    },
   };
 
   const mockFrom = (table: string) => {

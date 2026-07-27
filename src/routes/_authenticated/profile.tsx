@@ -387,7 +387,10 @@ function NumField({
   );
 
   useEffect(() => {
-    setVal(value === "" || value === null || value === undefined ? "" : String(value));
+    const currentNum = val === "" ? "" : parseFloat(val);
+    if (currentNum !== value && !(isNaN(currentNum as number) && value === "")) {
+      setVal(value === "" || value === null || value === undefined ? "" : String(value));
+    }
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

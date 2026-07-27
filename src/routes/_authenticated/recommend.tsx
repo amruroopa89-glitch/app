@@ -286,7 +286,10 @@ function Num({
   );
 
   useEffect(() => {
-    setVal(value === undefined || value === null ? "" : String(value));
+    const currentNum = val === "" ? NaN : parseFloat(val);
+    if (currentNum !== value && !(isNaN(currentNum) && (value === 0 || value === undefined || value === null))) {
+      setVal(value === undefined || value === null ? "" : String(value));
+    }
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

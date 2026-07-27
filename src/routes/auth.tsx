@@ -25,15 +25,11 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const search = Route.useSearch();
-  const [mode, setMode] = useState<"signin" | "signup" | "forgot" | "phone">(search.mode);
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">(search.mode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [isDemoOtp, setIsDemoOtp] = useState(false);
-  const [generatedOtp, setGeneratedOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -80,90 +76,6 @@ function AuthPage() {
     }
   };
 
-  const sendOtp = async () => {
-    const cleanMobile = mobile.trim();
-    if (!cleanMobile || cleanMobile.replace(/\D/g, "").length < 10) {
-      toast.error("Please enter a valid mobile number (min 10 digits)");
-      return;
-    }
-    setLoading(true);
-    try {
-      const phoneNumber = cleanMobile.startsWith("+") ? cleanMobile : `+91${cleanMobile}`;
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: phoneNumber,
-      });
-      if (error) {
-        const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        setGeneratedOtp(randomOtp);
-        setIsDemoOtp(true);
-        setOtpSent(true);
-        toast.success(`OTP sent to ${phoneNumber}! 📱`);
-        return;
-      }
-      setIsDemoOtp(false);
-      setOtpSent(true);
-      toast.success(`OTP sent to ${phoneNumber}! 📱`);
-    } catch (err) {
-      const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedOtp(randomOtp);
-      setIsDemoOtp(true);
-      setOtpSent(true);
-      toast.success(`OTP sent to ${mobile}! 📱`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const verifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otp || otp.length !== 6) {
-      toast.error("Please enter the 6-digit OTP");
-      return;
-    }
-    setLoading(true);
-    try {
-      const cleanMobile = mobile.trim();
-      const phoneNumber = cleanMobile.startsWith("+") ? cleanMobile : `+91${cleanMobile}`;
-
-      if (isDemoOtp) {
-        if (otp === generatedOtp || otp === "123456" || otp === "000000") {
-          toast.success("Mobile Verification Successful! Welcome 🌱");
-          navigate({ to: "/home" });
-          return;
-        } else {
-          toast.error(`Invalid OTP code. Please enter: ${generatedOtp || "123456"}`);
-          return;
-        }
-      }
-
-      const { error } = await supabase.auth.verifyOtp({
-        phone: phoneNumber,
-        token: otp,
-        type: "sms",
-      });
-
-      if (error) {
-        if (otp === generatedOtp || otp === "123456" || otp === "000000" || /^\d{6}$/.test(otp)) {
-          toast.success("Mobile Verification Successful! Welcome 🌱");
-          navigate({ to: "/home" });
-          return;
-        }
-        throw error;
-      }
-      toast.success("Welcome! 🌱");
-      navigate({ to: "/home" });
-    } catch (err) {
-      if (otp === generatedOtp || otp === "123456" || otp === "000000" || /^\d{6}$/.test(otp)) {
-        toast.success("Mobile Verification Successful! Welcome 🌱");
-        navigate({ to: "/home" });
-      } else {
-        toast.error((err as Error).message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -197,23 +109,21 @@ function AuthPage() {
 
           {/* Card */}
           <div className="rounded-3xl bg-card p-6 shadow-[var(--shadow-soft)]">
-            {mode !== "phone" ? (
-              <>
-                {/* Tab switcher */}
-                <div className="mb-5 flex rounded-xl bg-muted p-1">
-                  {(["signin", "signup"] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setMode(m)}
-                      className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
-                        mode === m ? "bg-card text-foreground shadow" : "text-muted-foreground"
-                      }`}
-                    >
-                      {m === "signin" ? "Sign In" : "Sign Up"}
-                    </button>
-                  ))}
-                </div>
+            {/* Tab switcher */}
+            <div className="mb-5 flex rounded-xl bg-muted p-1">
+              {(["signin", "signup"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
+                    mode === m ? "bg-card text-foreground shadow" : "text-muted-foreground"
+                  }`}
+                >
+                  {m === "signin" ? "Sign In" : "Sign Up"}
+                </button>
+              ))}
+            </div>
 
                 {/* Email / password form */}
                 <form onSubmit={submit} className="space-y-3">
@@ -292,15 +202,6 @@ function AuthPage() {
                     <div className="space-y-2">
                       <button
                         type="button"
-                        onClick={() => setMode("phone")}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground hover:bg-muted"
-                      >
-                        <Phone className="h-4 w-4" />
-                        Sign in with Mobile OTP
-                      </button>
-
-                      <button
-                        type="button"
                         onClick={signInWithGoogle}
                         className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground hover:bg-muted"
                       >
@@ -347,90 +248,6 @@ function AuthPage() {
                     </button>
                   )}
                 </div>
-              </>
-            ) : (
-              <>
-                {/* Mobile OTP Form */}
-                <div className="mb-4">
-                  <h2 className="text-lg font-bold text-foreground">Sign in with Mobile</h2>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    We'll send you a one-time password
-                  </p>
-                </div>
-
-                {!otpSent ? (
-                  <div className="space-y-3">
-                    <Field
-                      id="mobile-otp-input"
-                      icon={<Phone className="h-4 w-4" />}
-                      placeholder="Mobile number"
-                      value={mobile}
-                      onChange={setMobile}
-                      inputMode="tel"
-                      autoComplete="tel"
-                    />
-                    <button
-                      type="button"
-                      onClick={sendOtp}
-                      disabled={loading}
-                      className="w-full rounded-xl py-3 font-semibold text-primary-foreground shadow-[var(--shadow-soft)] disabled:opacity-60"
-                      style={{ background: "var(--gradient-primary)" }}
-                    >
-                      {loading ? "Sending OTP…" : "Send OTP"}
-                    </button>
-                  </div>
-                ) : (
-                  <form onSubmit={verifyOtp} className="space-y-3">
-                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-                      <span>OTP sent to <strong className="font-semibold">{mobile}</strong>. Enter the 6-digit code.</span>
-                    </div>
-                    <Field
-                      id="otp-input"
-                      icon={<Lock className="h-4 w-4" />}
-                      placeholder="Enter 6-digit OTP"
-                      value={otp}
-                      onChange={setOtp}
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                    />
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full rounded-xl py-3 font-semibold text-primary-foreground shadow-[var(--shadow-soft)] disabled:opacity-60"
-                      style={{ background: "var(--gradient-primary)" }}
-                    >
-                      {loading ? "Verifying…" : "Verify OTP"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOtpSent(false);
-                        setOtp("");
-                      }}
-                      className="w-full text-sm text-primary font-medium"
-                    >
-                      Resend OTP
-                    </button>
-                  </form>
-                )}
-
-                <div className="mt-4 text-center text-xs">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode("signin");
-                      setOtpSent(false);
-                      setOtp("");
-                      setMobile("");
-                    }}
-                    className="text-primary font-medium"
-                  >
-                    Back to email sign in
-                  </button>
-                </div>
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -460,39 +277,30 @@ function Field({
   autoComplete?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [localValue, setLocalValue] = useState(value);
 
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
+  // Uncontrolled input - parent state updates don't affect input
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setLocalValue(newValue);
-    onChange(newValue);
-    
-    // Force the input to display the value in Android WebView
-    if (inputRef.current) {
-      inputRef.current.value = newValue;
-    }
-  };
-
-  const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
-    const target = e.target as HTMLInputElement;
-    const newValue = target.value;
-    setLocalValue(newValue);
-    onChange(newValue);
+    onChange(e.target.value);
   };
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 focus-within:ring-2 focus-within:ring-primary/40 cursor-text min-h-[52px]">
-      <span className="text-muted-foreground flex-shrink-0 pointer-events-none select-none">{icon}</span>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      borderRadius: '12px',
+      border: '1px solid #e5e7eb',
+      backgroundColor: '#ffffff',
+      padding: '0 12px',
+      minHeight: '52px',
+    }}>
+      <span style={{ color: '#9ca3af', flexShrink: 0 }}>{icon}</span>
       <input
         ref={inputRef}
         id={id}
         type={type}
         placeholder={placeholder}
-        value={localValue}
+        defaultValue={value}
         required={required}
         inputMode={inputMode}
         autoComplete={autoComplete}
@@ -500,14 +308,21 @@ function Field({
         autoCapitalize={type === "email" || inputMode === "email" ? "none" : undefined}
         spellCheck={false}
         onChange={handleChange}
-        onInput={handleInput}
-        className="w-full min-w-0 bg-transparent py-3.5 text-base outline-none focus:outline-none"
         style={{ 
-          fontSize: "16px",
-          color: "rgb(34, 41, 35)",
-          WebkitTextFillColor: "rgb(34, 41, 35)",
-          caretColor: "rgb(82, 158, 73)",
-          opacity: 1
+          width: '100%',
+          minWidth: 0,
+          backgroundColor: 'transparent',
+          padding: '14px 0',
+          outline: 'none',
+          border: 'none',
+          fontSize: '16px',
+          color: '#1F2937',
+          WebkitTextFillColor: '#1F2937',
+          caretColor: '#529e49',
+          opacity: 1,
+          WebkitAppearance: 'none',
+          textShadow: 'none',
+          filter: 'none',
         }}
       />
     </div>
