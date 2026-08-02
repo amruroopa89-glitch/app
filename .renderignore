@@ -1,0 +1,11 @@
+android/
+appium-tests/
+selenium-tests/
+load-tests/
+reports/
+reports-download/
+full-e2e-report/
+public-reports/
+app-debug.apk
+vulnerability-test-cases.md
+*.xlsx
