@@ -383,7 +383,7 @@ function NumField({
   step?: number;
 }) {
   const [val, setVal] = useState<string>(
-    value === "" || value === null || value === undefined ? "" : String(value)
+    value === "" || value === null || value === undefined ? "" : String(value),
   );
 
   useEffect(() => {

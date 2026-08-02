@@ -93,33 +93,64 @@ function getCleanCategoryAndAssertion(s, idx, prefix) {
   const originalCategory = s.module || s.category || "General";
   let category = originalCategory;
 
-  const capPrefix = prefix === "WEB" ? "Web" : (prefix === "MOB" ? "Mobile" : "Load");
+  const capPrefix = prefix === "WEB" ? "Web" : prefix === "MOB" ? "Mobile" : "Load";
 
   if (category.toLowerCase().includes("functional")) {
     category = "Functional Testing";
-  } else if (category.toLowerCase().includes("ui") || category.toLowerCase().includes("ux") || category.toLowerCase().includes("responsive")) {
+  } else if (
+    category.toLowerCase().includes("ui") ||
+    category.toLowerCase().includes("ux") ||
+    category.toLowerCase().includes("responsive")
+  ) {
     category = "UI-UX Testing";
-  } else if (category.toLowerCase().includes("registration") || category.toLowerCase().includes("login") || category.toLowerCase().includes("auth") || category.toLowerCase().includes("session")) {
+  } else if (
+    category.toLowerCase().includes("registration") ||
+    category.toLowerCase().includes("login") ||
+    category.toLowerCase().includes("auth") ||
+    category.toLowerCase().includes("session")
+  ) {
     category = "Auth & Registration";
   } else if (category.toLowerCase().includes("validation")) {
     category = "Form Validation";
-  } else if (category.toLowerCase().includes("navigation") || category.toLowerCase().includes("screen flow") || category.toLowerCase().includes("routing")) {
+  } else if (
+    category.toLowerCase().includes("navigation") ||
+    category.toLowerCase().includes("screen flow") ||
+    category.toLowerCase().includes("routing")
+  ) {
     category = "Navigation & Flow";
   } else if (category.toLowerCase().includes("api") || category.toLowerCase().includes("backend")) {
     category = "API & Backend";
-  } else if (category.toLowerCase().includes("database") || category.toLowerCase().includes("sync")) {
+  } else if (
+    category.toLowerCase().includes("database") ||
+    category.toLowerCase().includes("sync")
+  ) {
     category = "Database & Sync";
   } else if (category.toLowerCase().includes("security")) {
     category = "Security Testing";
   } else if (category.toLowerCase().includes("performance")) {
     category = "Performance Testing";
-  } else if (category.toLowerCase().includes("device") || category.toLowerCase().includes("compat") || category.toLowerCase().includes("browser")) {
+  } else if (
+    category.toLowerCase().includes("device") ||
+    category.toLowerCase().includes("compat") ||
+    category.toLowerCase().includes("browser")
+  ) {
     category = "Device Compatibility";
-  } else if (category.toLowerCase().includes("network") || category.toLowerCase().includes("offline")) {
+  } else if (
+    category.toLowerCase().includes("network") ||
+    category.toLowerCase().includes("offline")
+  ) {
     category = "Network & Offline";
-  } else if (category.toLowerCase().includes("error") || category.toLowerCase().includes("edge") || category.toLowerCase().includes("life") || category.toLowerCase().includes("permissions")) {
+  } else if (
+    category.toLowerCase().includes("error") ||
+    category.toLowerCase().includes("edge") ||
+    category.toLowerCase().includes("life") ||
+    category.toLowerCase().includes("permissions")
+  ) {
     category = "Error Handling";
-  } else if (category.toLowerCase().includes("accessibility") || category.toLowerCase().includes("a11y")) {
+  } else if (
+    category.toLowerCase().includes("accessibility") ||
+    category.toLowerCase().includes("a11y")
+  ) {
     category = "Accessibility Testing";
   } else {
     category = "General Testing";
@@ -162,7 +193,7 @@ function writeDetailSheet(wb, name, prefix, steps) {
     { header: "Category", width: 35 },
     { header: "Assertion / Test Case", width: 45 },
     { header: "Status", width: 12 },
-    { header: "Duration (ms)", width: 16 }
+    { header: "Duration (ms)", width: 16 },
   ];
 
   wsD.getRow(2).height = 26;
@@ -174,7 +205,7 @@ function writeDetailSheet(wb, name, prefix, steps) {
     cell.alignment = { horizontal: "center", vertical: "middle" };
     cell.border = {
       top: { style: "medium", color: { argb: "FF1B5E20" } },
-      bottom: { style: "medium", color: { argb: "FF1B5E20" } }
+      bottom: { style: "medium", color: { argb: "FF1B5E20" } },
     };
   });
 
@@ -196,7 +227,7 @@ function writeDetailSheet(wb, name, prefix, steps) {
       top: { style: "thin", color: { argb: "FFE0E0E0" } },
       left: { style: "thin", color: { argb: "FFE0E0E0" } },
       bottom: { style: "thin", color: { argb: "FFE0E0E0" } },
-      right: { style: "thin", color: { argb: "FFE0E0E0" } }
+      right: { style: "thin", color: { argb: "FFE0E0E0" } },
     };
     cellA.alignment = { horizontal: "center", vertical: "middle" };
     cellA.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowBg } };
@@ -208,7 +239,7 @@ function writeDetailSheet(wb, name, prefix, steps) {
       top: { style: "thin", color: { argb: "FFE0E0E0" } },
       left: { style: "thin", color: { argb: "FFE0E0E0" } },
       bottom: { style: "thin", color: { argb: "FFE0E0E0" } },
-      right: { style: "thin", color: { argb: "FFE0E0E0" } }
+      right: { style: "thin", color: { argb: "FFE0E0E0" } },
     };
     cellB.alignment = { vertical: "middle" };
     cellB.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowBg } };
@@ -220,7 +251,7 @@ function writeDetailSheet(wb, name, prefix, steps) {
       top: { style: "thin", color: { argb: "FFE0E0E0" } },
       left: { style: "thin", color: { argb: "FFE0E0E0" } },
       bottom: { style: "thin", color: { argb: "FFE0E0E0" } },
-      right: { style: "thin", color: { argb: "FFE0E0E0" } }
+      right: { style: "thin", color: { argb: "FFE0E0E0" } },
     };
     cellC.alignment = { vertical: "middle" };
     cellC.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowBg } };
@@ -231,14 +262,19 @@ function writeDetailSheet(wb, name, prefix, steps) {
     cellD.fill = {
       type: "pattern",
       pattern: "solid",
-      fgColor: { argb: ok ? "FFE8F5E9" : "FFFFEBEE" }
+      fgColor: { argb: ok ? "FFE8F5E9" : "FFFFEBEE" },
     };
-    cellD.font = { name: "Calibri", size: 10, bold: true, color: { argb: ok ? "FF2E7D32" : "FFC62828" } };
+    cellD.font = {
+      name: "Calibri",
+      size: 10,
+      bold: true,
+      color: { argb: ok ? "FF2E7D32" : "FFC62828" },
+    };
     cellD.border = {
       top: { style: "thin", color: { argb: "FFE0E0E0" } },
       left: { style: "thin", color: { argb: "FFE0E0E0" } },
       bottom: { style: "thin", color: { argb: "FFE0E0E0" } },
-      right: { style: "thin", color: { argb: "FFE0E0E0" } }
+      right: { style: "thin", color: { argb: "FFE0E0E0" } },
     };
     cellD.alignment = { horizontal: "center", vertical: "middle" };
 
@@ -249,7 +285,7 @@ function writeDetailSheet(wb, name, prefix, steps) {
       top: { style: "thin", color: { argb: "FFE0E0E0" } },
       left: { style: "thin", color: { argb: "FFE0E0E0" } },
       bottom: { style: "thin", color: { argb: "FFE0E0E0" } },
-      right: { style: "thin", color: { argb: "FFE0E0E0" } }
+      right: { style: "thin", color: { argb: "FFE0E0E0" } },
     };
     cellE.alignment = { horizontal: "center", vertical: "middle" };
     cellE.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowBg } };
@@ -422,7 +458,11 @@ async function main() {
       webSteps.length,
       webSteps.filter((s) => s.status === "PASS").length,
       webSteps.filter((s) => s.status !== "PASS").length,
-      webSteps.length ? ((webSteps.filter((s) => s.status === "PASS").length / webSteps.length) * 100).toFixed(1) + "%" : "100.0%",
+      webSteps.length
+        ? ((webSteps.filter((s) => s.status === "PASS").length / webSteps.length) * 100).toFixed(
+            1,
+          ) + "%"
+        : "100.0%",
     ],
     [
       "Mobile App Tests",
@@ -430,7 +470,11 @@ async function main() {
       mobSteps.length,
       mobSteps.filter((s) => s.status === "PASS").length,
       mobSteps.filter((s) => s.status !== "PASS").length,
-      mobSteps.length ? ((mobSteps.filter((s) => s.status === "PASS").length / mobSteps.length) * 100).toFixed(1) + "%" : "100.0%",
+      mobSteps.length
+        ? ((mobSteps.filter((s) => s.status === "PASS").length / mobSteps.length) * 100).toFixed(
+            1,
+          ) + "%"
+        : "100.0%",
     ],
     [
       "Load Testing Dashboard",
@@ -438,7 +482,11 @@ async function main() {
       loadSteps.length,
       loadSteps.filter((s) => s.status === "PASS").length,
       loadSteps.filter((s) => s.status !== "PASS").length,
-      loadSteps.length ? ((loadSteps.filter((s) => s.status === "PASS").length / loadSteps.length) * 100).toFixed(1) + "%" : "100.0%",
+      loadSteps.length
+        ? ((loadSteps.filter((s) => s.status === "PASS").length / loadSteps.length) * 100).toFixed(
+            1,
+          ) + "%"
+        : "100.0%",
     ],
     [
       "Vulnerability Testing Dashboard",
@@ -446,7 +494,11 @@ async function main() {
       vulSteps.length,
       vulSteps.filter((s) => s.status === "PASS").length,
       vulSteps.filter((s) => s.status !== "PASS").length,
-      vulSteps.length ? ((vulSteps.filter((s) => s.status === "PASS").length / vulSteps.length) * 100).toFixed(1) + "%" : "100.0%",
+      vulSteps.length
+        ? ((vulSteps.filter((s) => s.status === "PASS").length / vulSteps.length) * 100).toFixed(
+            1,
+          ) + "%"
+        : "100.0%",
     ],
     ["Total Summary", "", totalCount, passedCount, failedCount, passRate],
   ];
@@ -473,7 +525,8 @@ async function main() {
   if (webSteps.length > 0) writeDetailSheet(wbDest, "Web Dashboard Tests", "WEB", webSteps);
   if (mobSteps.length > 0) writeDetailSheet(wbDest, "Mobile App Tests", "MOB", mobSteps);
   if (loadSteps.length > 0) writeDetailSheet(wbDest, "Load Testing Dashboard", "LOAD", loadSteps);
-  if (vulSteps.length > 0) writeDetailSheet(wbDest, "Vulnerability Security Tests", "VUL", vulSteps);
+  if (vulSteps.length > 0)
+    writeDetailSheet(wbDest, "Vulnerability Security Tests", "VUL", vulSteps);
 
   const absoluteOutputPath = path.resolve(outputPath);
   await wbDest.xlsx.writeFile(absoluteOutputPath);

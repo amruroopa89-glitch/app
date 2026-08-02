@@ -52,54 +52,85 @@ const font = (opts = {}) => ({ name: FONT, size: 10, ...opts });
 function getCleanCategoryAndAssertion(s, idx, prefix) {
   const originalCategory = s.module || s.category || "General";
   let category = originalCategory;
-  
-  const capPrefix = prefix === "WEB" ? "Web" : (prefix === "MOB" ? "Mobile" : "Load");
-  
+
+  const capPrefix = prefix === "WEB" ? "Web" : prefix === "MOB" ? "Mobile" : "Load";
+
   if (category.toLowerCase().includes("functional")) {
     category = "Functional Testing";
-  } else if (category.toLowerCase().includes("ui") || category.toLowerCase().includes("ux") || category.toLowerCase().includes("responsive")) {
+  } else if (
+    category.toLowerCase().includes("ui") ||
+    category.toLowerCase().includes("ux") ||
+    category.toLowerCase().includes("responsive")
+  ) {
     category = "UI-UX Testing";
-  } else if (category.toLowerCase().includes("registration") || category.toLowerCase().includes("login") || category.toLowerCase().includes("auth") || category.toLowerCase().includes("session")) {
+  } else if (
+    category.toLowerCase().includes("registration") ||
+    category.toLowerCase().includes("login") ||
+    category.toLowerCase().includes("auth") ||
+    category.toLowerCase().includes("session")
+  ) {
     category = "Auth & Registration";
   } else if (category.toLowerCase().includes("validation")) {
     category = "Form Validation";
-  } else if (category.toLowerCase().includes("navigation") || category.toLowerCase().includes("screen flow") || category.toLowerCase().includes("routing")) {
+  } else if (
+    category.toLowerCase().includes("navigation") ||
+    category.toLowerCase().includes("screen flow") ||
+    category.toLowerCase().includes("routing")
+  ) {
     category = "Navigation & Flow";
   } else if (category.toLowerCase().includes("api") || category.toLowerCase().includes("backend")) {
     category = "API & Backend";
-  } else if (category.toLowerCase().includes("database") || category.toLowerCase().includes("sync")) {
+  } else if (
+    category.toLowerCase().includes("database") ||
+    category.toLowerCase().includes("sync")
+  ) {
     category = "Database & Sync";
   } else if (category.toLowerCase().includes("security")) {
     category = "Security Testing";
   } else if (category.toLowerCase().includes("performance")) {
     category = "Performance Testing";
-  } else if (category.toLowerCase().includes("device") || category.toLowerCase().includes("compat") || category.toLowerCase().includes("browser")) {
+  } else if (
+    category.toLowerCase().includes("device") ||
+    category.toLowerCase().includes("compat") ||
+    category.toLowerCase().includes("browser")
+  ) {
     category = "Device Compatibility";
-  } else if (category.toLowerCase().includes("network") || category.toLowerCase().includes("offline")) {
+  } else if (
+    category.toLowerCase().includes("network") ||
+    category.toLowerCase().includes("offline")
+  ) {
     category = "Network & Offline";
-  } else if (category.toLowerCase().includes("error") || category.toLowerCase().includes("edge") || category.toLowerCase().includes("life") || category.toLowerCase().includes("permissions")) {
+  } else if (
+    category.toLowerCase().includes("error") ||
+    category.toLowerCase().includes("edge") ||
+    category.toLowerCase().includes("life") ||
+    category.toLowerCase().includes("permissions")
+  ) {
     category = "Error Handling";
-  } else if (category.toLowerCase().includes("accessibility") || category.toLowerCase().includes("a11y")) {
+  } else if (
+    category.toLowerCase().includes("accessibility") ||
+    category.toLowerCase().includes("a11y")
+  ) {
     category = "Accessibility Testing";
   } else {
     category = "General Testing";
   }
-  
+
   category = `${capPrefix} ${category}`;
-  
+
   let categorySnake = category
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, "")
     .trim()
     .replace(/\s+/g, "_");
-  
+
   const prefixLower = capPrefix.toLowerCase() + "_";
   if (categorySnake.startsWith(prefixLower)) {
     categorySnake = categorySnake.substring(prefixLower.length);
   }
-  
+
   const assertionName = `test_${idx}_${categorySnake}_assertion`;
-  
+
   return { category, assertion: assertionName };
 }
 
@@ -116,8 +147,8 @@ export const generateExcelReport = async (summary, steps, outputPath) => {
 
   // ── Determine prefix ────────────────────────────────────────────────────────
   let prefix = "WEB";
-  if (steps.some(s => s.id && s.id.includes("MOB"))) prefix = "MOB";
-  else if (steps.some(s => s.id && s.id.includes("LOAD"))) prefix = "LOAD";
+  if (steps.some((s) => s.id && s.id.includes("MOB"))) prefix = "MOB";
+  else if (steps.some((s) => s.id && s.id.includes("LOAD"))) prefix = "LOAD";
 
   let detailTabName = "Web Dashboard Tests";
   if (prefix === "MOB") {
@@ -257,7 +288,7 @@ export const generateExcelReport = async (summary, steps, outputPath) => {
     { header: "Category", width: 35 },
     { header: "Assertion / Test Case", width: 45 },
     { header: "Status", width: 12 },
-    { header: "Duration (ms)", width: 16 }
+    { header: "Duration (ms)", width: 16 },
   ];
 
   wsD.getRow(2).height = 26;

@@ -69,7 +69,10 @@ function ResetPasswordPage() {
 
   if (!isValidToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--gradient-auth)" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "var(--gradient-auth)" }}
+      >
         <div className="text-primary-foreground text-center">
           <div className="animate-spin h-8 w-8 border-4 border-primary-foreground border-t-transparent rounded-full mx-auto mb-4"></div>
           <p>Verifying reset link...</p>
@@ -79,7 +82,10 @@ function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col overflow-y-auto pb-12" style={{ background: "var(--gradient-auth)" }}>
+    <div
+      className="min-h-screen flex flex-col overflow-y-auto pb-12"
+      style={{ background: "var(--gradient-auth)" }}
+    >
       <div className="flex flex-1 items-center justify-center px-4 py-6">
         <div className="w-full max-w-md">
           {/* Header */}
@@ -186,7 +192,9 @@ function Field({
 
   return (
     <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 focus-within:ring-2 focus-within:ring-primary/40 cursor-text min-h-[52px]">
-      <span className="text-muted-foreground flex-shrink-0 pointer-events-none select-none">{icon}</span>
+      <span className="text-muted-foreground flex-shrink-0 pointer-events-none select-none">
+        {icon}
+      </span>
       <input
         ref={inputRef}
         id={id}

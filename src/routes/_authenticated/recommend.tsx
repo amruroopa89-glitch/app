@@ -282,12 +282,15 @@ function Num({
   step?: number;
 }) {
   const [val, setVal] = useState<string>(
-    value === undefined || value === null ? "" : String(value)
+    value === undefined || value === null ? "" : String(value),
   );
 
   useEffect(() => {
     const currentNum = val === "" ? NaN : parseFloat(val);
-    if (currentNum !== value && !(isNaN(currentNum) && (value === 0 || value === undefined || value === null))) {
+    if (
+      currentNum !== value &&
+      !(isNaN(currentNum) && (value === 0 || value === undefined || value === null))
+    ) {
       setVal(value === undefined || value === null ? "" : String(value));
     }
   }, [value]);

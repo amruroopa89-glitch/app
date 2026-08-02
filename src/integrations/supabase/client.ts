@@ -249,7 +249,10 @@ function createMockSupabaseClient() {
     },
     async verifyOtp({ phone, token }: any) {
       if (!token || token.length !== 6) {
-        return { data: { user: null, session: null }, error: { message: "Please enter a valid 6-digit OTP" } };
+        return {
+          data: { user: null, session: null },
+          error: { message: "Please enter a valid 6-digit OTP" },
+        };
       }
       const users = getMockUsers();
       let user = users.find((u: any) => u.phone === phone || u.user_metadata?.mobile === phone);
@@ -271,7 +274,12 @@ function createMockSupabaseClient() {
       }
       const session = {
         access_token: "mock-phone-token-" + Math.random().toString(36).substring(2, 11),
-        user: { id: user.id, email: user.email, phone: user.phone, user_metadata: user.user_metadata },
+        user: {
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          user_metadata: user.user_metadata,
+        },
       };
       saveMockSession(session);
       setTimeout(() => triggerAuthChange("SIGNED_IN", session), 0);

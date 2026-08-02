@@ -201,11 +201,13 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Aggressive input text visibility fix for Android WebView */
-  input, textarea, select {
-    color: #1F2937 !important;
-    -webkit-text-fill-color: #1F2937 !important;
-    caret-color: #529e49 !important;
+  /* Input text visibility fix for Android WebView - Universal CSS compatibility */
+  input,
+  textarea,
+  select {
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+    caret-color: #166534 !important;
     opacity: 1 !important;
     -webkit-user-select: text !important;
     user-select: text !important;
@@ -213,34 +215,28 @@
     font-size: 16px !important;
     -webkit-appearance: none !important;
     appearance: none !important;
-    background-color: transparent !important;
     text-shadow: none !important;
     filter: none !important;
-    -webkit-text-security: none !important;
   }
 
-  .dark input, .dark textarea, .dark select {
-    color: #f8faf8 !important;
-    -webkit-text-fill-color: #f8faf8 !important;
-    caret-color: #4ade80 !important;
-  }
-
-  input::placeholder, textarea::placeholder {
+  input::placeholder,
+  textarea::placeholder {
     color: #9ca3af !important;
     -webkit-text-fill-color: #9ca3af !important;
-    opacity: 0.7 !important;
+    opacity: 0.8 !important;
   }
-  
+
   /* Force input value to be visible (WebView specific) */
   input:not([type="checkbox"]):not([type="radio"]) {
-    -webkit-text-fill-color: #1F2937 !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
   }
-  
+
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus {
-    -webkit-text-fill-color: #1F2937 !important;
-    -webkit-box-shadow: 0 0 0 1000px white inset !important;
-    box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: #111827 !important;
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
   }
 }
