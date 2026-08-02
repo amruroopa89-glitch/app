@@ -283,7 +283,7 @@ function createMockSupabaseClient() {
       };
       saveMockSession(session);
       setTimeout(() => triggerAuthChange("SIGNED_IN", session), 0);
-      return { data: { user: session.user, session }, error: null };
+      return { data: { user: session.user as any, session }, error: null };
     },
   };
 
