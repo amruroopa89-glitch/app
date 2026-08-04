@@ -28,39 +28,55 @@ function ResetPasswordPage() {
   useEffect(() => {
     let mounted = true;
 
-    // Listen to Supabase Auth state changes for recovery event
+    // Check URL hash for recovery token
+    const checkToken = async () => {
+      const hash = window.location.hash;
+      console.log("Reset password page hash:", hash);
+
+      // Check if this is a password recovery link
+      if (hash.includes("type=recovery") || hash.includes("access_token")) {
+        console.log("Valid recovery hash detected");
+        setIsValidToken(true);
+        return;
+      }
+
+      // Check current session
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log("Current session:", session ? "exists" : "none");
+      
+      if (session) {
+        setIsValidToken(true);
+        return;
+      }
+
+      // Wait a bit for auth state to initialize
+      setTimeout(async () => {
+        if (!mounted) return;
+        const { data: { session: s } } = await supabase.auth.getSession();
+        if (s) {
+          setIsValidToken(true);
+        } else {
+          console.error("No valid session or recovery token found");
+          toast.error("Invalid or expired reset link. Please request a new one.");
+          setTimeout(() => {
+            navigate({ to: "/auth", search: { mode: "forgot" } });
+          }, 2000);
+        }
+      }, 1000);
+    };
+
+    // Listen to Supabase Auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session ? "session exists" : "no session");
       if (!mounted) return;
       if (event === "PASSWORD_RECOVERY" || session) {
         setIsValidToken(true);
       }
     });
 
-    const hash = typeof window !== "undefined" ? window.location.hash : "";
-    const isRecoveryHash = hash.includes("type=recovery") || hash.includes("access_token");
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return;
-      if (session || isRecoveryHash) {
-        setIsValidToken(true);
-      } else {
-        const timer = setTimeout(() => {
-          if (!mounted) return;
-          supabase.auth.getSession().then(({ data: { session: s } }) => {
-            if (!mounted) return;
-            if (s) {
-              setIsValidToken(true);
-            } else {
-              toast.error("Invalid or expired reset link");
-              navigate({ to: "/auth", search: { mode: "signin" } });
-            }
-          });
-        }, 1500);
-        return () => clearTimeout(timer);
-      }
-    });
+    checkToken();
 
     return () => {
       mounted = false;
@@ -198,54 +214,50 @@ function Field({
   autoComplete?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [localValue, setLocalValue] = useState(value);
-
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setLocalValue(newValue);
-    onChange(newValue);
-
-    if (inputRef.current) {
-      inputRef.current.value = newValue;
-    }
-  };
-
-  const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
-    const target = e.target as HTMLInputElement;
-    const newValue = target.value;
-    setLocalValue(newValue);
-    onChange(newValue);
+    onChange(e.target.value);
   };
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 focus-within:ring-2 focus-within:ring-primary/40 cursor-text min-h-[52px]">
-      <span className="text-muted-foreground flex-shrink-0 pointer-events-none select-none">
-        {icon}
-      </span>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      borderRadius: '12px',
+      border: '1px solid #e5e7eb',
+      backgroundColor: '#ffffff',
+      padding: '0 12px',
+      minHeight: '52px',
+    }}>
+      <span style={{ color: '#9ca3af', flexShrink: 0 }}>{icon}</span>
       <input
         ref={inputRef}
         id={id}
         type={type}
         placeholder={placeholder}
-        value={localValue}
+        defaultValue={value}
         required={required}
         autoComplete={autoComplete}
         autoCorrect="off"
         autoCapitalize="none"
         spellCheck={false}
         onChange={handleChange}
-        onInput={handleInput}
-        className="w-full min-w-0 bg-transparent py-3.5 text-base outline-none focus:outline-none"
-        style={{
-          fontSize: "16px",
-          color: "rgb(34, 41, 35)",
-          WebkitTextFillColor: "rgb(34, 41, 35)",
-          caretColor: "rgb(82, 158, 73)",
+        style={{ 
+          width: '100%',
+          minWidth: 0,
+          backgroundColor: 'transparent',
+          padding: '14px 0',
+          outline: 'none',
+          border: 'none',
+          fontSize: '16px',
+          color: '#1F2937',
+          WebkitTextFillColor: '#1F2937',
+          caretColor: '#529e49',
           opacity: 1,
+          WebkitAppearance: 'none',
+          textShadow: 'none',
+          filter: 'none',
         }}
       />
     </div>
