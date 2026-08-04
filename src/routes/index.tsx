@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, CloudRain, Bug, TrendingUp, Droplets } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import farmerMascot from "@/assets/farmer-mascot.png";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -14,6 +15,17 @@ export const Route = createFileRoute("/")({
 });
 
 function Welcome() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if URL has password recovery token
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery') || hash.includes('access_token')) {
+      console.log('Password recovery token detected on homepage, redirecting to /reset-password');
+      // Redirect to reset-password page with the hash
+      navigate({ to: '/reset-password' });
+    }
+  }, [navigate]);
   return (
     <main
       className="relative min-h-screen overflow-hidden text-primary-foreground"
