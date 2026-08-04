@@ -322,7 +322,7 @@ const SoilInput = z.object({
 });
 
 export const recommendCrops = createServerFn({ method: "POST" })
-  .inputValidator((d) => SoilInput.parse(d))
+  .validator((d) => SoilInput.parse(d))
   .handler(async ({ data }) => {
     const isTest = process.env.NODE_ENV === "test";
 
@@ -452,7 +452,7 @@ const ChatInput = z.object({
 });
 
 export const askAssistant = createServerFn({ method: "POST" })
-  .inputValidator((d) => ChatInput.parse(d))
+  .validator((d) => ChatInput.parse(d))
   .handler(async ({ data }) => {
     const isTest = process.env.NODE_ENV === "test";
 
@@ -562,7 +562,7 @@ const DiseaseInput = z.object({
 });
 
 export const detectDisease = createServerFn({ method: "POST" })
-  .inputValidator((d) => DiseaseInput.parse(d))
+  .validator((d) => DiseaseInput.parse(d))
   .handler(async ({ data }) => {
     const isTest = process.env.NODE_ENV === "test";
     if (isTest) {

@@ -130,31 +130,62 @@ function ProfilePage() {
     navigate({ to: "/" });
   };
 
-  const useGPS = () => {
-    if (!navigator.geolocation) return toast.error("GPS not available in this browser");
+  const useGPS = async () => {
     toast.info("Fetching your location…");
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const r = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`,
-          );
-          const j = await r.json();
-          const a = j.address || {};
-          setP((prev) => ({
-            ...prev,
-            village: a.village || a.hamlet || a.town || a.suburb || prev.village,
-            district: a.state_district || a.county || a.city_district || prev.district,
-            state: a.state || prev.state,
-          }));
-          toast.success("Location filled from GPS 📍");
-        } catch {
-          toast.error("Couldn't look up address. Please enter manually.");
+    try {
+      let lat: number | null = null;
+      let lon: number | null = null;
+
+      try {
+        const { Geolocation } = await import("@capacitor/geolocation");
+        const permResult = await Geolocation.requestPermissions();
+        if (permResult.location === "denied") {
+          toast.error("Location permission denied. Please enable location access in App Settings.");
+          return;
         }
-      },
-      (e) => toast.error("GPS denied: " + e.message),
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
+        const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+        lat = pos.coords.latitude;
+        lon = pos.coords.longitude;
+      } catch {
+        // Fallback to standard web geolocation
+        if (!navigator.geolocation) {
+          toast.error("GPS is not available on this device.");
+          return;
+        }
+        await new Promise<void>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              lat = pos.coords.latitude;
+              lon = pos.coords.longitude;
+              resolve();
+            },
+            (err) => reject(err),
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+        });
+      }
+
+      if (lat !== null && lon !== null) {
+        const r = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+        );
+        const j = await r.json();
+        const a = j.address || {};
+        setP((prev) => ({
+          ...prev,
+          village: a.village || a.hamlet || a.town || a.suburb || prev.village,
+          district: a.state_district || a.county || a.city_district || prev.district,
+          state: a.state || prev.state,
+        }));
+        toast.success("Location filled from GPS 📍");
+      }
+    } catch (e: any) {
+      if (e?.code === 1 || e?.message?.toLowerCase().includes("denied")) {
+        toast.error("GPS denied: Please enable Location permissions for this app in phone Settings.");
+      } else {
+        toast.error("Couldn't look up address. Please enter manually.");
+      }
+    }
   };
 
   if (loading)

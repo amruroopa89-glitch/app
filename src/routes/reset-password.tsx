@@ -26,15 +26,46 @@ function ResetPasswordPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if we have a valid session (user clicked the reset link)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+    let mounted = true;
+
+    // Listen to Supabase Auth state changes for recovery event
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      if (event === "PASSWORD_RECOVERY" || session) {
         setIsValidToken(true);
-      } else {
-        toast.error("Invalid or expired reset link");
-        navigate({ to: "/auth" });
       }
     });
+
+    const hash = typeof window !== "undefined" ? window.location.hash : "";
+    const isRecoveryHash = hash.includes("type=recovery") || hash.includes("access_token");
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      if (session || isRecoveryHash) {
+        setIsValidToken(true);
+      } else {
+        const timer = setTimeout(() => {
+          if (!mounted) return;
+          supabase.auth.getSession().then(({ data: { session: s } }) => {
+            if (!mounted) return;
+            if (s) {
+              setIsValidToken(true);
+            } else {
+              toast.error("Invalid or expired reset link");
+              navigate({ to: "/auth", search: { mode: "signin" } });
+            }
+          });
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,7 +90,7 @@ function ResetPasswordPage() {
       if (error) throw error;
 
       toast.success("Password updated successfully! 🎉");
-      navigate({ to: "/auth" });
+      navigate({ to: "/auth", search: { mode: "signin" } });
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -134,7 +165,7 @@ function ResetPasswordPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate({ to: "/auth" })}
+                onClick={() => navigate({ to: "/auth", search: { mode: "signin" } })}
                 className="text-primary font-medium"
               >
                 Back to Sign In

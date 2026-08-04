@@ -77,13 +77,46 @@ function AuthPage() {
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin + "/home",
-      },
-    });
-    if (error) toast.error(error.message);
+    setLoading(true);
+    try {
+      const redirectUrl = window.location.origin + "/home";
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        try {
+          const { Browser } = await import("@capacitor/browser");
+          await Browser.open({ url: data.url });
+        } catch {
+          window.location.href = data.url;
+        }
+      } else {
+        toast.success("Welcome back!");
+        navigate({ to: "/home" });
+      }
+    } catch (err: any) {
+      console.error("Google sign-in error:", err);
+      const msg = err?.message || "Google Sign-In failed";
+      if (
+        msg.toLowerCase().includes("unsupported") ||
+        msg.toLowerCase().includes("not enabled") ||
+        msg.toLowerCase().includes("provider")
+      ) {
+        toast.error(
+          "Google Sign-In requires Google OAuth credentials to be configured in your Supabase Auth settings. Please sign in with Email or Mobile.",
+        );
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
