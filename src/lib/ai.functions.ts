@@ -16,18 +16,9 @@ async function callAI(body: any) {
     );
   }
 
-  let requestBody = { ...body };
+  let requestBody = { max_tokens: 4096, ...body };
   if (isOpenRouter) {
-    if (body.model === "google/gemini-3-flash-preview") {
-      const hasImage = body.messages?.some(
-        (m: any) => Array.isArray(m.content) && m.content.some((c: any) => c.type === "image_url"),
-      );
-      if (hasImage) {
-        requestBody.model = process.env.OPENROUTER_VISION_MODEL || "openrouter/free";
-      } else {
-        requestBody.model = process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b:free";
-      }
-    }
+    requestBody.model = process.env.OPENROUTER_MODEL || "openrouter/auto";
   }
 
   const headers: Record<string, string> = {
@@ -191,9 +182,36 @@ const CROP_DB: Record<
     yield: "1.2 t/acre",
     water: "Medium",
     fertilizer: "NPK 30:60:30",
-    profit: "₹28,000/acre",
+    profit: "₹30,000/acre",
     demand: "High",
     tips: "Ensure good seedbed preparation and weed control in first 45 days.",
+  },
+  "Pearl Millet": {
+    emoji: "🌾",
+    yield: "1.3 t/acre",
+    water: "Low",
+    fertilizer: "NPK 40:20:0",
+    profit: "₹18,000/acre",
+    demand: "High",
+    tips: "Thrives in arid climates with minimal irrigation requirements.",
+  },
+  Mustard: {
+    emoji: "🌼",
+    yield: "0.9 t/acre",
+    water: "Low",
+    fertilizer: "NPK 80:40:40 + Sulphur",
+    profit: "₹29,000/acre",
+    demand: "High",
+    tips: "Apply Sulphur at 10 kg/acre to boost oil content in seeds.",
+  },
+  Banana: {
+    emoji: "🍌",
+    yield: "25 t/acre",
+    water: "High",
+    fertilizer: "NPK 200:50:300",
+    profit: "₹70,000/acre",
+    demand: "High",
+    tips: "Provide drip irrigation and high potassium supplementation during bunching.",
   },
 };
 
@@ -226,13 +244,13 @@ export function normalizeRecommendations(
   const normalized: CropRec[] = rawRecs.map((item: any, idx: number) => {
     let name = "Crop";
     let score = 95 - idx * 5;
-    let emoji = "🌾";
-    let cropYield = "2.0 t/acre";
-    let water = "Medium";
-    let fertilizer = "NPK Balanced";
-    let profit = "₹25,000/acre";
-    let demand = "High";
-    let tips = "Follow standard agronomic practices for best yield.";
+    let emoji: string | null = null;
+    let cropYield: string | null = null;
+    let water: string | null = null;
+    let fertilizer: string | null = null;
+    let profit: string | null = null;
+    let demand: string | null = null;
+    let tips: string | null = null;
 
     if (typeof item === "string") {
       name = item;
@@ -253,31 +271,29 @@ export function normalizeRecommendations(
       if (item.tips || item.tip) tips = String(item.tips || item.tip);
     }
 
-    // Match against CROP_DB to fill missing or incomplete values
+    // Match against CROP_DB to fill missing values
     const dbKey = Object.keys(CROP_DB).find((k) => k.toLowerCase() === name.toLowerCase()) || name;
     const dbMatch = CROP_DB[dbKey];
 
-    if (dbMatch) {
-      if (emoji === "🌾" && dbMatch.emoji) emoji = dbMatch.emoji;
-      if (cropYield === "2.0 t/acre" && dbMatch.yield) cropYield = dbMatch.yield;
-      if (water === "Medium" && dbMatch.water) water = dbMatch.water;
-      if (fertilizer === "NPK Balanced" && dbMatch.fertilizer) fertilizer = dbMatch.fertilizer;
-      if (profit === "₹25,000/acre" && dbMatch.profit) profit = dbMatch.profit;
-      if (demand === "High" && dbMatch.demand) demand = dbMatch.demand;
-      if (tips === "Follow standard agronomic practices for best yield." && dbMatch.tips)
-        tips = dbMatch.tips;
-    }
+    const finalEmoji = emoji || dbMatch?.emoji || "🌾";
+    const finalYield = cropYield || dbMatch?.yield || "2.0 t/acre";
+    const finalWater = water || dbMatch?.water || "Medium";
+    const finalFertilizer = fertilizer || dbMatch?.fertilizer || "NPK Balanced";
+    const finalProfit = profit || dbMatch?.profit || "₹25,000/acre";
+    const finalDemand = demand || dbMatch?.demand || "High";
+    const finalTips =
+      tips || dbMatch?.tips || "Follow standard agronomic practices for best yield.";
 
     return {
       name,
-      emoji,
+      emoji: finalEmoji,
       score: Math.min(100, Math.max(50, Math.round(score))),
-      yield: cropYield,
-      water,
-      fertilizer,
-      profit,
-      demand,
-      tips,
+      yield: finalYield,
+      water: finalWater,
+      fertilizer: finalFertilizer,
+      profit: finalProfit,
+      demand: finalDemand,
+      tips: finalTips,
     };
   });
 
@@ -290,24 +306,401 @@ export function normalizeRecommendations(
 }
 
 export function generateAgronomicRecommendations(data?: any): CropRecommendationResult {
+  const soil = data?.soilType || "Loamy";
+  const ph = typeof data?.soilPh === "number" ? data.soilPh : 6.5;
+  const n = typeof data?.nitrogen === "number" ? data.nitrogen : 40;
+  const p = typeof data?.phosphorus === "number" ? data.phosphorus : 30;
+  const k = typeof data?.potassium === "number" ? data.potassium : 30;
   const water = data?.water || "Medium";
   const season = data?.season || "Kharif";
-  const soil = data?.soilType || "Loamy";
+  const region = (data?.region || "").toLowerCase();
 
-  let list: string[] = ["Paddy", "Cotton", "Groundnut", "Maize", "Wheat"];
+  type Candidate = {
+    name: string;
+    emoji: string;
+    soils: string[];
+    phMin: number;
+    phMax: number;
+    waterLevels: string[];
+    seasons: string[];
+    regions?: string[];
+    highN?: boolean;
+    highP?: boolean;
+    highK?: boolean;
+    yield: string;
+    waterReq: string;
+    fertilizer: string;
+    profit: string;
+    demand: string;
+    tips: string;
+  };
 
-  if (water === "Low") {
-    list = ["Groundnut", "Sorghum", "Millet", "Pulses", "Sunflower"];
-  } else if (water === "High") {
-    list = ["Paddy", "Sugarcane", "Tomato", "Maize", "Cotton"];
-  } else if (season === "Rabi") {
-    list = ["Wheat", "Groundnut", "Maize", "Chilli", "Pulses"];
-  } else if (season === "Zaid" || season === "Summer") {
-    list = ["Groundnut", "Sunflower", "Maize", "Millet", "Pulses"];
-  }
+  const candidates: Candidate[] = [
+    {
+      name: "Paddy",
+      emoji: "🌾",
+      soils: ["Clay", "Loamy", "Black"],
+      phMin: 5.5,
+      phMax: 7.0,
+      waterLevels: ["High", "Medium"],
+      seasons: ["Kharif", "Rabi"],
+      regions: ["kerala", "tamil nadu", "andhra", "telangana", "punjab", "bengal", "odisha", "assam"],
+      highN: true,
+      highK: true,
+      yield: "2.5 t/acre",
+      waterReq: "High",
+      fertilizer: "NPK 120:60:60",
+      profit: "₹25,000/acre",
+      demand: "High",
+      tips: "Maintain standing water of 2-5 cm during early tillering.",
+    },
+    {
+      name: "Cotton",
+      emoji: "🌱",
+      soils: ["Black", "Red", "Loamy"],
+      phMin: 6.0,
+      phMax: 8.5,
+      waterLevels: ["Medium", "Low"],
+      seasons: ["Kharif"],
+      regions: ["gujarat", "maharashtra", "telangana", "andhra", "karnataka", "punjab", "haryana"],
+      highN: true,
+      yield: "1.2 t/acre",
+      waterReq: "Medium",
+      fertilizer: "NPK 80:40:40",
+      profit: "₹32,000/acre",
+      demand: "High",
+      tips: "Deep black soil retains moisture well for boll formation.",
+    },
+    {
+      name: "Groundnut",
+      emoji: "🥜",
+      soils: ["Sandy", "Red", "Loamy"],
+      phMin: 5.8,
+      phMax: 7.2,
+      waterLevels: ["Low", "Medium"],
+      seasons: ["Kharif", "Rabi", "Zaid", "Summer"],
+      regions: ["andhra", "gujarat", "tamil nadu", "karnataka", "rajasthan"],
+      highP: true,
+      yield: "1.1 t/acre",
+      waterReq: "Low",
+      fertilizer: "NPK 20:40:20 + Gypsum",
+      profit: "₹27,000/acre",
+      demand: "High",
+      tips: "Apply Gypsum 200 kg/acre at pegging stage for dense pod formation.",
+    },
+    {
+      name: "Maize",
+      emoji: "🌽",
+      soils: ["Loamy", "Red", "Black"],
+      phMin: 5.8,
+      phMax: 7.5,
+      waterLevels: ["Medium", "High"],
+      seasons: ["Kharif", "Rabi", "Summer"],
+      highN: true,
+      yield: "3.0 t/acre",
+      waterReq: "Medium",
+      fertilizer: "NPK 120:60:50",
+      profit: "₹22,000/acre",
+      demand: "High",
+      tips: "Perform earthing up at 30 days after sowing for root stability.",
+    },
+    {
+      name: "Wheat",
+      emoji: "🌾",
+      soils: ["Loamy", "Clay", "Black"],
+      phMin: 6.0,
+      phMax: 7.8,
+      waterLevels: ["Medium", "High"],
+      seasons: ["Rabi"],
+      regions: ["punjab", "haryana", "uttar pradesh", "madhya pradesh", "rajasthan", "bihar"],
+      highN: true,
+      yield: "2.2 t/acre",
+      waterReq: "Medium",
+      fertilizer: "NPK 120:50:50",
+      profit: "₹24,000/acre",
+      demand: "High",
+      tips: "Critical first irrigation must be given at crown root initiation stage.",
+    },
+    {
+      name: "Sorghum",
+      emoji: "🌾",
+      soils: ["Sandy", "Red", "Clay", "Black"],
+      phMin: 6.0,
+      phMax: 8.5,
+      waterLevels: ["Low"],
+      seasons: ["Kharif", "Rabi", "Summer"],
+      regions: ["maharashtra", "karnataka", "rajasthan", "andhra"],
+      yield: "1.5 t/acre",
+      waterReq: "Low",
+      fertilizer: "NPK 80:40:40",
+      profit: "₹19,000/acre",
+      demand: "Medium",
+      tips: "Highly drought resilient crop suitable for low rainfall zones.",
+    },
+    {
+      name: "Pearl Millet",
+      emoji: "🌾",
+      soils: ["Sandy", "Red", "Loamy"],
+      phMin: 6.5,
+      phMax: 8.5,
+      waterLevels: ["Low"],
+      seasons: ["Kharif", "Summer", "Zaid"],
+      regions: ["rajasthan", "haryana", "gujarat", "uttar pradesh"],
+      yield: "1.3 t/acre",
+      waterReq: "Low",
+      fertilizer: "NPK 40:20:0",
+      profit: "₹18,000/acre",
+      demand: "High",
+      tips: "Thrives in arid climates with minimal irrigation requirements.",
+    },
+    {
+      name: "Sugarcane",
+      emoji: "🎋",
+      soils: ["Black", "Clay", "Loamy"],
+      phMin: 6.5,
+      phMax: 7.8,
+      waterLevels: ["High"],
+      seasons: ["Kharif", "Rabi"],
+      regions: ["uttar pradesh", "maharashtra", "karnataka", "tamil nadu", "andhra"],
+      highN: true,
+      highK: true,
+      yield: "38 t/acre",
+      waterReq: "High",
+      fertilizer: "NPK 250:115:115",
+      profit: "₹48,000/acre",
+      demand: "High",
+      tips: "Drip fertigation yields maximum sugar content and water efficiency.",
+    },
+    {
+      name: "Tomato",
+      emoji: "🍅",
+      soils: ["Loamy", "Red", "Sandy"],
+      phMin: 6.0,
+      phMax: 7.2,
+      waterLevels: ["Medium", "High"],
+      seasons: ["Rabi", "Zaid", "Summer", "Kharif"],
+      highK: true,
+      highP: true,
+      yield: "16 t/acre",
+      waterReq: "Medium",
+      fertilizer: "NPK 150:100:100",
+      profit: "₹55,000/acre",
+      demand: "High",
+      tips: "Stake plants and apply mulch to prevent soil-borne fungal leaf spot.",
+    },
+    {
+      name: "Chilli",
+      emoji: "🌶️",
+      soils: ["Loamy", "Red", "Black"],
+      phMin: 6.0,
+      phMax: 7.5,
+      waterLevels: ["Medium"],
+      seasons: ["Kharif", "Rabi"],
+      regions: ["andhra", "telangana", "karnataka", "madhya pradesh"],
+      highP: true,
+      yield: "2.1 t/acre",
+      waterReq: "Medium",
+      fertilizer: "NPK 100:50:50",
+      profit: "₹65,000/acre",
+      demand: "High",
+      tips: "Ensure good drainage to prevent wilt and root rot during rainy season.",
+    },
+    {
+      name: "Pulses",
+      emoji: "🫘",
+      soils: ["Red", "Sandy", "Loamy"],
+      phMin: 6.0,
+      phMax: 8.0,
+      waterLevels: ["Low", "Medium"],
+      seasons: ["Rabi", "Kharif", "Zaid"],
+      highP: true,
+      yield: "0.9 t/acre",
+      waterReq: "Low",
+      fertilizer: "NPK 20:50:20",
+      profit: "₹28,000/acre",
+      demand: "High",
+      tips: "Inoculate seeds with Rhizobium culture to fix atmospheric nitrogen.",
+    },
+    {
+      name: "Sunflower",
+      emoji: "🌻",
+      soils: ["Loamy", "Black", "Red"],
+      phMin: 6.5,
+      phMax: 8.0,
+      waterLevels: ["Medium", "Low"],
+      seasons: ["Zaid", "Summer", "Rabi"],
+      highP: true,
+      yield: "0.8 t/acre",
+      waterReq: "Medium",
+      fertilizer: "NPK 60:90:60",
+      profit: "₹24,000/acre",
+      demand: "Medium",
+      tips: "Critical irrigation required at flowering and seed-setting stages.",
+    },
+    {
+      name: "Soybean",
+      emoji: "🫛",
+      soils: ["Black", "Loamy"],
+      phMin: 6.0,
+      phMax: 7.5,
+      waterLevels: ["Medium"],
+      seasons: ["Kharif"],
+      regions: ["madhya pradesh", "maharashtra", "rajasthan", "karnataka"],
+      highP: true,
+      yield: "1.2 t/acre",
+      waterReq: "Medium",
+      fertilizer: "NPK 30:60:30",
+      profit: "₹30,000/acre",
+      demand: "High",
+      tips: "Requires clean seedbed and early weed management in first 40 days.",
+    },
+    {
+      name: "Mustard",
+      emoji: "🌼",
+      soils: ["Loamy", "Sandy", "Red"],
+      phMin: 6.0,
+      phMax: 8.0,
+      waterLevels: ["Low", "Medium"],
+      seasons: ["Rabi"],
+      regions: ["rajasthan", "haryana", "madhya pradesh", "uttar pradesh", "punjab"],
+      yield: "0.9 t/acre",
+      waterReq: "Low",
+      fertilizer: "NPK 80:40:40 + Sulphur",
+      profit: "₹29,000/acre",
+      demand: "High",
+      tips: "Apply Sulphur at 10 kg/acre to boost oil content in seeds.",
+    },
+    {
+      name: "Banana",
+      emoji: "🍌",
+      soils: ["Loamy", "Clay", "Red"],
+      phMin: 6.0,
+      phMax: 7.5,
+      waterLevels: ["High"],
+      seasons: ["Kharif", "Rabi", "Summer"],
+      regions: ["tamil nadu", "kerala", "andhra", "maharashtra", "gujarat"],
+      highK: true,
+      highN: true,
+      yield: "25 t/acre",
+      waterReq: "High",
+      fertilizer: "NPK 200:50:300",
+      profit: "₹70,000/acre",
+      demand: "High",
+      tips: "Provide drip irrigation and high potassium supplementation during bunching.",
+    },
+  ];
 
-  const rationale = `Based on your ${soil} soil with ${water.toLowerCase()} water availability during the ${season} season, these 5 crops are optimal for soil compatibility and profitability.`;
-  return normalizeRecommendations(list, rationale, data);
+  const stateAliases: Record<string, string[]> = {
+    ap: ["andhra"],
+    tn: ["tamil nadu"],
+    mh: ["maharashtra"],
+    up: ["uttar pradesh"],
+    mp: ["madhya pradesh"],
+    rj: ["rajasthan"],
+    pb: ["punjab"],
+    hr: ["haryana"],
+    ka: ["karnataka"],
+    wb: ["bengal"],
+    ts: ["telangana"],
+    kl: ["kerala"],
+  };
+
+  const scored = candidates.map((c) => {
+    let score = 55;
+
+    const soilLower = soil.toLowerCase();
+    const soilMatched = c.soils.some(
+      (s) => soilLower.includes(s.toLowerCase()) || s.toLowerCase().includes(soilLower)
+    );
+    if (soilMatched) {
+      score += 18;
+    }
+
+    if (ph >= c.phMin && ph <= c.phMax) {
+      score += 14;
+    } else {
+      const diff = Math.min(Math.abs(ph - c.phMin), Math.abs(ph - c.phMax));
+      score -= Math.round(diff * 5);
+    }
+
+    if (c.waterLevels.includes(water)) {
+      score += 16;
+    } else if (water === "Low" && c.waterLevels.includes("High")) {
+      score -= 25; // High-water crops fail under low water availability
+    } else if (water === "High" && c.waterLevels.includes("Low")) {
+      score += 2;
+    } else if (water === "Medium" && c.waterLevels.includes("Low")) {
+      score += 10;
+    }
+
+    if (c.seasons.includes(season)) {
+      score += 14;
+    } else {
+      score -= 30; // Off-season crops cannot be cultivated successfully
+    }
+
+    if (c.regions && region) {
+      const isRegionMatch = c.regions.some((r) => {
+        if (region.includes(r)) return true;
+        for (const [code, names] of Object.entries(stateAliases)) {
+          if (region.includes(code) && names.includes(r)) return true;
+        }
+        return false;
+      });
+      if (isRegionMatch) {
+        score += 10;
+      }
+    }
+
+    if (c.highN && n >= 70) score += 8;
+    if (c.highP && p >= 40) score += 8;
+    if (c.highK && k >= 40) score += 8;
+
+    const isLegume = ["Groundnut", "Pulses", "Soybean"].includes(c.name);
+    if (isLegume && n < 30) score += 10; // Legumes fix atmospheric nitrogen
+    if (!isLegume && n < 30 && c.highN) score -= 8;
+
+    // Crop rotation history evaluation
+    const historyLower = (data?.history || "").toLowerCase();
+    if (historyLower) {
+      const histIsLegume = ["groundnut", "pulse", "pulses", "soybean", "gram"].some((h) =>
+        historyLower.includes(h)
+      );
+      const histIsCereal = ["paddy", "rice", "wheat", "maize", "corn", "sorghum", "millet"].some((h) =>
+        historyLower.includes(h)
+      );
+
+      if (historyLower.includes(c.name.toLowerCase())) {
+        score -= 15; // Penalize monoculture / repeating identical crop
+      } else if (histIsLegume && (c.highN || ["Paddy", "Maize", "Wheat", "Sugarcane"].includes(c.name))) {
+        score += 12; // Boost nitrogen-consuming cereals following legumes
+      } else if (histIsCereal && isLegume) {
+        score += 12; // Boost legumes following heavy cereals
+      }
+    }
+
+    return {
+      name: c.name,
+      emoji: c.emoji,
+      score: Math.min(99, Math.max(50, Math.round(score))),
+      yield: c.yield,
+      water: c.waterReq,
+      fertilizer: c.fertilizer,
+      profit: c.profit,
+      demand: c.demand,
+      tips: c.tips,
+    };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  const top5 = scored.slice(0, 5).map((item, idx) => ({
+    ...item,
+    score: Math.max(65, Math.min(98, item.score - idx * 4)),
+  }));
+
+  const rationale = `Based on your ${soil} soil with pH ${ph}, NPK values (N:${n}, P:${p}, K:${k} kg/ha), ${water.toLowerCase()} water availability in the ${season} season${region ? ` near ${region}` : ""}, these 5 crops offer optimal soil nutrient match, climate suitability, and high return on investment.`;
+
+  return normalizeRecommendations(top5, rationale, data);
 }
 
 const SoilInput = z.object({
@@ -347,7 +740,7 @@ export const recommendCrops = createServerFn({ method: "POST" })
       }
     }
 
-    const sys = `You are an expert agronomist for Indian farmers. Given soil and conditions, recommend EXACTLY 5 crops, ranked best to worst, that are realistic for the inputs. Return strictly JSON with format {"recommendations": [{"name":"Paddy","emoji":"🌾","score":95,"yield":"2.5 t/acre","water":"High","fertilizer":"NPK 120:60:60","profit":"₹25,000/acre","demand":"High","tips":"Tip..."}], "rationale": "..."}.`;
+    const sys = `You are an expert agronomist for Indian farmers. Given soil and conditions, recommend EXACTLY 5 crops, ranked best to worst, tailored strictly to the inputs (soil type, pH, NPK, region, season). Return strictly JSON with format {"recommendations": [{"name":"Crop Name","emoji":"🌾","score":95,"yield":"2.5 t/acre","water":"High","fertilizer":"NPK 120:60:60","profit":"₹25,000/acre","demand":"High","tips":"Tip..."}], "rationale": "..."}.`;
     const user = `Soil type: ${data.soilType}
 pH: ${data.soilPh}
 N: ${data.nitrogen} kg/ha, P: ${data.phosphorus} kg/ha, K: ${data.potassium} kg/ha
@@ -358,7 +751,7 @@ Recent crop history: ${data.history ?? "unknown"}`;
 
     try {
       const json = await callAI({
-        model: process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b:free",
+        model: process.env.OPENROUTER_MODEL || "openrouter/auto",
         messages: [
           { role: "system", content: sys },
           { role: "user", content: user },
@@ -503,7 +896,7 @@ ${profileLines}`
 
     try {
       const json = await callAI({
-        model: "google/gemini-3-flash-preview",
+        model: process.env.OPENROUTER_MODEL || "openrouter/auto",
         messages: [{ role: "system", content: sys }, ...data.messages],
         temperature: 0.7,
       });
@@ -514,26 +907,76 @@ ${profileLines}`
       const lastMsg = data.messages[data.messages.length - 1]?.content || "";
       const q = lastMsg.toLowerCase();
 
-      let reply =
-        "Here is specific guidance for your farming query: Ensure proper soil testing, balanced NPK application, and timely irrigation tailored to your crop.";
-      if (q.includes("groundnut")) {
+      let reply = "";
+
+      if (q.includes("groundnut") || q.includes("peanut")) {
         reply =
-          "For groundnut (peanuts), apply NPK in the ratio 20:40:20 kg/ha at sowing. Crucially, apply Gypsum at 200 kg/acre during the pegging stage (around 40-45 days after sowing) to ensure well-filled pods and strong shells.";
+          "For groundnut cultivation, prepare well-drained sandy loam soil with a pH of 6.0-6.8. Apply NPK 20:40:20 kg/ha as a basal dose. Crucially, apply Gypsum at 200 kg/acre during the pegging stage (40-45 days after sowing) to promote pod filling and kernel weight.";
       } else if (q.includes("banana")) {
         reply =
-          "Banana plants are heavy potassium feeders. Apply 200g Nitrogen, 50g Phosphorus, and 300g Potassium per plant in 4-5 split doses throughout the crop cycle, especially during vegetative growth and bunch emergence.";
+          "Banana requires deep, fertile loamy soil with rich potassium levels and good drainage. Apply 200g Nitrogen, 50g Phosphorus, and 300g Potassium per plant in 4-5 split doses throughout growth, especially during vegetative development and bunch emergence.";
       } else if (q.includes("cotton")) {
         reply =
-          "For cotton, recommend NPK 80:40:40 kg/ha. Apply nitrogen in 3 split doses (sowing, square formation, flowering). Monitor weekly for pink bollworm and whiteflies.";
+          "Cotton grows best in deep black clay (regur) or alluvial soil with pH 6.0-8.0. Apply NPK 80:40:40 kg/ha in 3 split doses (sowing, square formation, flowering). Monitor weekly for pink bollworm and sucking pests like whiteflies and aphids.";
       } else if (q.includes("paddy") || q.includes("rice")) {
         reply =
-          "For paddy, apply NPK 120:60:60 kg/ha. Apply full Phosphorus at transplanting, and split Nitrogen and Potassium into 3 doses (basal, tillering, panicle initiation).";
-      } else if (q.includes("pesticide") || q.includes("pest") || q.includes("insect")) {
+          "For paddy (rice), cultivate in heavy clay or clay loam soil capable of holding 2-5 cm of standing water. Apply NPK 120:60:60 kg/ha. Apply full Phosphorus at transplanting, and split Nitrogen and Potassium across basal, tillering, and panicle initiation stages.";
+      } else if (q.includes("wheat")) {
         reply =
-          "For general pest control, consider integrated pest management (IPM). Use neem oil spray (5ml/L) as an organic preventative, or consult local agricultural officers for targeted chemical controls.";
-      } else if (q.includes("good morning") || q.includes("hello") || q.includes("hi")) {
+          "Wheat grows best in well-drained loamy soil during the Rabi season. Sow between Nov 1-15. Apply NPK 120:50:50 kg/ha. Give the first critical irrigation at the Crown Root Initiation (CRI) stage, around 21 days after sowing.";
+      } else if (q.includes("sugarcane")) {
         reply =
-          "Good day! 👋 I am your AI Farming Assistant. Ask me anything about crop fertilization, pest control, irrigation, or soil health!";
+          "Sugarcane is a long-duration crop needing heavy clay loam soil and high water. Apply NPK 250:115:115 kg/ha in 4 split doses. Drip fertigation increases cane yield and sugar recovery significantly while saving 40% water.";
+      } else if (q.includes("tomato")) {
+        reply =
+          "Tomatoes require well-drained sandy loam or red loam soil with pH 6.0-7.0. Apply NPK 150:100:100 kg/ha along with FYM/compost 10 t/acre. Stake plants early and prune lower leaves to protect against leaf spot and blight.";
+      } else if (q.includes("potato")) {
+        reply =
+          "Potato needs loose, friable sandy loam soil rich in organic matter. Apply NPK 120:100:120 kg/ha. Perform earthing up twice at 30 and 45 days after planting to encourage tuberosity and protect tubers from greening.";
+      } else if (q.includes("chilli") || q.includes("pepper")) {
+        reply =
+          "Chilli thrives in well-drained loamy soil with pH 6.0-7.5. Apply NPK 100:50:50 kg/ha. Use silver-black plastic mulch to reduce weed growth and conserve soil moisture while preventing thrips attacks.";
+      } else if (q.includes("mustard")) {
+        reply =
+          "Mustard grows well in light to heavy loamy soil in cold Rabi weather. Apply NPK 80:40:40 kg/ha plus 10 kg/acre Elemental Sulphur. Sulphur application increases seed oil yield by 15-20%.";
+      } else if (q.includes("pulses") || q.includes("gram") || q.includes("dal")) {
+        reply =
+          "Pulse crops fix atmospheric nitrogen through root nodules. Treat seeds with Rhizobium and PSB culture before sowing. Apply NPK 20:50:20 kg/ha basal dose with minimal irrigation to avoid root rot.";
+      } else if (q.includes("maize") || q.includes("corn")) {
+        reply =
+          "Maize requires fertile loamy soil with proper drainage. Apply NPK 120:60:50 kg/ha. Apply Nitrogen in 3 splits (sowing, knee-high stage, tasseling) and earthing up at 30 days.";
+      } else if (
+        q.includes("pesticide") ||
+        q.includes("pest") ||
+        q.includes("aphid") ||
+        q.includes("insect") ||
+        q.includes("worm")
+      ) {
+        reply =
+          "For effective pest management: 1) Spray Neem oil (5ml/L) as an organic preventive. 2) Install yellow sticky traps for sucking pests (whiteflies/aphids). 3) For severe infestations, consult local agricultural extension officers for crop-specific chemical options like Imidacloprid or Chlorantraniliprole.";
+      } else if (
+        q.includes("fertilizer") ||
+        q.includes("npk") ||
+        q.includes("compost") ||
+        q.includes("manure") ||
+        q.includes("soil")
+      ) {
+        reply =
+          "Soil health tips: Perform a soil test every 2 years to determine pH and macro/micronutrient deficits. Apply 5-10 tonnes/acre of farmyard manure (FYM) or vermicompost. Always split Nitrogen application to avoid leaching loss.";
+      } else if (q.includes("irrigation") || q.includes("water") || q.includes("drip")) {
+        reply =
+          "Irrigation guidance: Adopt drip or sprinkler irrigation to improve water use efficiency by up to 50%. Irrigate during critical growth phases (sowing, flowering, pod/grain filling) to maximize harvest yield.";
+      } else if (
+        q.includes("hello") ||
+        q.includes("hi") ||
+        q.includes("good morning") ||
+        q.includes("namaste")
+      ) {
+        reply =
+          "Good day! 👋 I am your Green Harvest AI Farming Assistant. Ask me anything about crop recommendations, fertilization schedules, pest control, soil health, or irrigation management!";
+      } else {
+        reply =
+          "For optimal crop cultivation: 1) Select crops compatible with your soil type and seasonal water availability. 2) Conduct soil pH testing (target 6.0-7.5). 3) Apply balanced NPK fertilizers in split doses tailored to crop growth stages. 4) Use integrated pest management for sustainable high yields.";
       }
 
       return { reply };

@@ -91,11 +91,11 @@ export async function askGemini({
       temperature: 0.7,
       topK: 40,
       topP: 0.95,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 8192,
     },
   };
 
-  const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash"];
+  const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
   let lastError: Error | null = null;
 
   for (const model of models) {
@@ -138,42 +138,47 @@ export async function recommendCropsGemini(data: any): Promise<any> {
 
   if (!apiKey) return null;
 
-  const prompt = `You are an expert agronomist for Indian agriculture. Given these inputs:
-Soil Type: ${data.soilType}
-pH: ${data.soilPh}
-NPK: N=${data.nitrogen}, P=${data.phosphorus}, K=${data.potassium} kg/ha
-Water: ${data.water}
-Season: ${data.season}
-Region: ${data.region ?? "India"}
-History: ${data.history ?? "None"}
+  const prompt = `You are an expert agronomist for Indian agriculture.
+ANALYZE these specific farming conditions carefully:
+- Soil Type: ${data.soilType}
+- pH: ${data.soilPh}
+- NPK Values (kg/ha): N=${data.nitrogen}, P=${data.phosphorus}, K=${data.potassium}
+- Water Availability: ${data.water}
+- Season: ${data.season}
+- Region / Location: ${data.region || "India"}
+- Recent Crop History: ${data.history || "None"}
 
-Recommend EXACTLY 5 crops ranked best to worst. Return ONLY valid JSON in this exact structure without markdown code blocks:
+CRITICAL INSTRUCTION: Tailor your crop selection strictly to the provided Soil Type, pH, NPK levels, Region, Water availability, and Season. Do NOT recommend water-intensive or unsuitable crops if soil type, water level, or region are incompatible.
+
+Recommend EXACTLY 5 crops ranked best to worst for THESE specific inputs.
+Return ONLY valid JSON in this exact structure without markdown code blocks:
 {
   "recommendations": [
     {
-      "name": "Paddy",
+      "name": "Crop Name",
       "emoji": "🌾",
       "score": 95,
       "yield": "2.5 t/acre",
-      "water": "High",
-      "fertilizer": "NPK 120:60:60",
+      "water": "Medium",
+      "fertilizer": "NPK ratio",
       "profit": "₹25,000/acre",
       "demand": "High",
-      "tips": "Maintain standing water during early growth."
+      "tips": "Specific advice for this crop under specified soil/climate."
     }
   ],
-  "rationale": "Clear rationale statement."
+  "rationale": "Detailed explanation of why these 5 crops fit the specific soil type (${data.soilType}), pH (${data.soilPh}), NPK levels, season (${data.season}), and location (${data.region || "India"})."
 }`;
 
   const payload = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: 0.2,
+      temperature: 0.3,
       responseMimeType: "application/json",
+      maxOutputTokens: 4096,
     },
   };
 
-  const models = ["gemini-2.5-flash", "gemini-1.5-flash"];
+  const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
   for (const model of models) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;

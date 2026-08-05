@@ -4,6 +4,7 @@ import {
   askAssistant as serverAsk,
   recommendCrops as serverRecommend,
   detectDisease as serverDetect,
+  generateAgronomicRecommendations,
 } from "./ai.functions";
 
 async function fetchOpenRouter(
@@ -17,6 +18,7 @@ async function fetchOpenRouter(
     model: options.model,
     messages,
     temperature: 0.7,
+    max_tokens: 4096,
   };
   if (options.tools) {
     body.tools = options.tools;
@@ -76,7 +78,7 @@ export function useAskAssistant() {
   const serverFn = useServerFn(serverAsk);
 
   return async (req: { data: any }) => {
-    // 1. Try Gemini API directly on client
+    // 1. Try Gemini API directly on client if valid
     const geminiKey =
       (typeof import.meta !== "undefined" && import.meta.env?.VITE_GEMINI_API_KEY) ||
       process.env.VITE_GEMINI_API_KEY;
@@ -93,7 +95,7 @@ export function useAskAssistant() {
       }
     }
 
-    // 2. Try Server Function (runs askGemini on server)
+    // 2. Try Server Function
     try {
       return await serverFn(req);
     } catch (serverErr) {
@@ -103,24 +105,47 @@ export function useAskAssistant() {
       const lastMsg = req.data.messages?.[req.data.messages.length - 1]?.content || "";
       const q = lastMsg.toLowerCase();
 
-      let reply =
-        "For best crop yield, maintain balanced soil pH (6.0 - 7.5), perform regular soil testing, and apply recommended NPK fertilizers with adequate irrigation.";
+      let reply = "";
 
       if (q.includes("banana")) {
         reply =
-          "Banana cultivation grows best in **deep, rich, well-drained loamy or alluvial soil** with a pH range of 6.0 to 7.5. The soil should be high in organic content, rich in potassium, and have good moisture retention capacity without waterlogging.";
+          "Banana cultivation grows best in deep, rich, well-drained loamy or alluvial soil with a pH of 6.0 to 7.5. Apply 200g Nitrogen, 50g Phosphorus, and 300g Potassium per plant in 4-5 split doses throughout vegetative development and bunch emergence.";
       } else if (q.includes("groundnut") || q.includes("peanut")) {
         reply =
-          "Groundnuts grow best in well-drained **sandy loam or red loam soil** with a pH of 6.0 to 6.8. Loose soil allows easy peg penetration for pod development. Apply Gypsum at 200 kg/acre at the pegging stage.";
+          "Groundnuts grow best in well-drained sandy loam or red loam soil with pH 6.0 to 6.8. Apply NPK 20:40:20 kg/ha at sowing and Gypsum at 200 kg/acre at the pegging stage (40-45 days) for heavy pod filling.";
       } else if (q.includes("cotton")) {
         reply =
-          "Cotton yields best in **deep black clay soil (regur) or well-drained alluvial soil** with a pH of 6.0 to 8.0. Apply NPK in split doses and monitor for sucking pests.";
+          "Cotton yields best in deep black clay soil (regur) or alluvial soil with pH 6.0 to 8.0. Apply NPK 80:40:40 kg/ha in 3 split doses and monitor weekly for sucking pests.";
       } else if (q.includes("paddy") || q.includes("rice")) {
         reply =
-          "Paddy grows best in **heavy clay or clay loam soil** with low permeability to hold standing water. The optimal soil pH is 5.5 to 6.5.";
-      } else if (q.includes("fertilizer") || q.includes("npk")) {
+          "Paddy grows best in heavy clay or clay loam soil with standing water (2-5 cm). Apply NPK 120:60:60 kg/ha in 3 split doses (basal, tillering, panicle initiation).";
+      } else if (q.includes("wheat")) {
         reply =
-          "Apply fertilizers in split doses based on growth stages: Nitrogen for leaf growth, Phosphorus at planting for root development, and Potassium during fruiting and grain formation.";
+          "Wheat thrives in well-drained loamy soil during the Rabi season. Apply NPK 120:50:50 kg/ha and irrigate at Crown Root Initiation (CRI) 21 days after sowing.";
+      } else if (q.includes("sugarcane")) {
+        reply =
+          "Sugarcane requires heavy clay loam soil with high water availability. Apply NPK 250:115:115 kg/ha in 4 split doses. Drip fertigation improves yield by 30%.";
+      } else if (q.includes("tomato")) {
+        reply =
+          "Tomatoes prefer well-drained sandy loam or red loam soil (pH 6.0-7.0). Apply NPK 150:100:100 kg/ha with 10 t/acre compost. Stake plants to prevent disease.";
+      } else if (q.includes("chilli")) {
+        reply =
+          "Chilli grows best in loamy soil with pH 6.0-7.5. Apply NPK 100:50:50 kg/ha. Mulching reduces weeds and maintains moisture.";
+      } else if (q.includes("mustard")) {
+        reply =
+          "Mustard grows well in loamy soil in cold Rabi weather. Apply NPK 80:40:40 kg/ha plus 10 kg/acre Sulphur to boost oil content.";
+      } else if (q.includes("pulses") || q.includes("gram")) {
+        reply =
+          "Pulses fix nitrogen naturally. Apply NPK 20:50:20 kg/ha and treat seeds with Rhizobium culture before sowing.";
+      } else if (q.includes("pesticide") || q.includes("pest")) {
+        reply =
+          "For pest control: Spray Neem oil (5ml/L) as an organic preventive, use sticky traps, or consult local agricultural officers for targeted chemical controls.";
+      } else if (q.includes("fertilizer") || q.includes("npk") || q.includes("soil")) {
+        reply =
+          "Apply fertilizers in split doses based on growth stages: Nitrogen for leaf growth, Phosphorus for root development, and Potassium for fruiting and grain weight.";
+      } else {
+        reply =
+          "For optimal crop production: Select crops matched to your soil type and water availability, test soil pH regularly (6.0-7.5 target), and apply balanced NPK fertilizers in split doses.";
       }
 
       return { reply };
@@ -135,30 +160,8 @@ export function useRecommendCrops() {
     try {
       return await serverFn(req);
     } catch (err) {
-      console.warn("Recommendation call error, generating fallback:", err);
-      // Client-side agronomic engine fallback if server is unreachable
-      const data = req.data || {};
-      const water = data.water || "Medium";
-      const season = data.season || "Kharif";
-      const soil = data.soilType || "Loamy";
-
-      let list = [
-        { name: "Groundnut", emoji: "🥜", score: 96, yield: "1.0 t/acre", water: "Low", fertilizer: "NPK 20:40:20 + Gypsum", profit: "₹25,000/acre", demand: "High", tips: "Apply Gypsum at pegging stage." },
-        { name: "Cotton", emoji: "🌱", score: 91, yield: "1.2 t/acre", water: "Medium", fertilizer: "NPK 80:40:40", profit: "₹30,000/acre", demand: "High", tips: "Monitor for sucking pests." },
-        { name: "Maize", emoji: "🌽", score: 87, yield: "3.0 t/acre", water: "Medium", fertilizer: "NPK 120:60:50", profit: "₹22,000/acre", demand: "Medium", tips: "Ensure proper earthing up." },
-        { name: "Paddy", emoji: "🌾", score: 82, yield: "2.5 t/acre", water: "High", fertilizer: "NPK 120:60:60", profit: "₹24,000/acre", demand: "High", tips: "Maintain standing water early." },
-        { name: "Sorghum", emoji: "🌾", score: 78, yield: "1.5 t/acre", water: "Low", fertilizer: "NPK 80:40:40", profit: "₹18,000/acre", demand: "Medium", tips: "Drought tolerant crop." }
-      ];
-
-      if (water === "Low") {
-        list[0] = { name: "Groundnut", emoji: "🥜", score: 98, yield: "1.0 t/acre", water: "Low", fertilizer: "NPK 20:40:20 + Gypsum", profit: "₹26,000/acre", demand: "High", tips: "Apply Gypsum at 200 kg/acre." };
-        list[1] = { name: "Sorghum", emoji: "🌾", score: 92, yield: "1.5 t/acre", water: "Low", fertilizer: "NPK 80:40:40", profit: "₹19,000/acre", demand: "Medium", tips: "Ideal for low rain areas." };
-      }
-
-      return {
-        recommendations: list,
-        rationale: `Based on your ${soil} soil with ${water.toLowerCase()} water availability during ${season} season, these 5 crops offer maximum yield and profitability.`
-      };
+      console.warn("Recommendation call error, generating dynamic fallback:", err);
+      return generateAgronomicRecommendations(req.data);
     }
   };
 }
