@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { askGemini, recommendCropsGemini } from "./gemini";
 
 const isOpenRouter = !!process.env.OPENROUTER_API_KEY;
 
@@ -330,7 +331,23 @@ export const recommendCrops = createServerFn({ method: "POST" })
       return generateAgronomicRecommendations(data);
     }
 
-    const sys = `You are an expert agronomist for Indian farmers. Given soil and conditions, recommend EXACTLY 5 crops, ranked best to worst, that are realistic for the inputs. Return strictly via the provided function call.`;
+    // Try Gemini API first
+    const hasGeminiKey =
+      !!process.env.GEMINI_API_KEY ||
+      !!process.env.VITE_GEMINI_API_KEY;
+
+    if (hasGeminiKey) {
+      try {
+        const geminiRes = await recommendCropsGemini(data);
+        if (geminiRes && Array.isArray(geminiRes.recommendations)) {
+          return normalizeRecommendations(geminiRes.recommendations, geminiRes.rationale, data);
+        }
+      } catch (geminiErr) {
+        console.warn("Gemini crop recommendation failed, falling back:", geminiErr);
+      }
+    }
+
+    const sys = `You are an expert agronomist for Indian farmers. Given soil and conditions, recommend EXACTLY 5 crops, ranked best to worst, that are realistic for the inputs. Return strictly JSON with format {"recommendations": [{"name":"Paddy","emoji":"🌾","score":95,"yield":"2.5 t/acre","water":"High","fertilizer":"NPK 120:60:60","profit":"₹25,000/acre","demand":"High","tips":"Tip..."}], "rationale": "..."}.`;
     const user = `Soil type: ${data.soilType}
 pH: ${data.soilPh}
 N: ${data.nitrogen} kg/ha, P: ${data.phosphorus} kg/ha, K: ${data.potassium} kg/ha
@@ -341,64 +358,15 @@ Recent crop history: ${data.history ?? "unknown"}`;
 
     try {
       const json = await callAI({
-        model: "google/gemini-3-flash-preview",
+        model: process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b:free",
         messages: [
           { role: "system", content: sys },
           { role: "user", content: user },
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "submit_recommendations",
-              description: "Return 5 ranked crop recommendations.",
-              parameters: {
-                type: "object",
-                properties: {
-                  recommendations: {
-                    type: "array",
-                    minItems: 5,
-                    maxItems: 5,
-                    items: {
-                      type: "object",
-                      properties: {
-                        name: { type: "string" },
-                        emoji: { type: "string", description: "single emoji" },
-                        score: { type: "number", description: "suitability % 0-100" },
-                        yield: { type: "string", description: "e.g. 2.4 t/acre" },
-                        water: { type: "string", enum: ["Low", "Medium", "High"] },
-                        fertilizer: { type: "string" },
-                        profit: { type: "string", description: "₹/acre" },
-                        demand: { type: "string", enum: ["Low", "Medium", "High"] },
-                        tips: { type: "string", description: "1-2 short sentences" },
-                      },
-                      required: [
-                        "name",
-                        "emoji",
-                        "score",
-                        "yield",
-                        "water",
-                        "fertilizer",
-                        "profit",
-                        "demand",
-                        "tips",
-                      ],
-                      additionalProperties: false,
-                    },
-                  },
-                  rationale: { type: "string" },
-                },
-                required: ["recommendations", "rationale"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "submit_recommendations" } },
       });
 
       const message = json.choices?.[0]?.message;
-      const argsStr = message?.tool_calls?.[0]?.function?.arguments || message?.content;
+      const argsStr = message?.content;
       if (!argsStr) {
         return generateAgronomicRecommendations(data);
       }
@@ -419,7 +387,7 @@ Recent crop history: ${data.history ?? "unknown"}`;
         return normalizeRecommendations(rawRecs, parsed.rationale, data);
       }
     } catch (err) {
-      console.warn("AI recommendation failed, falling back to agronomic engine:", err);
+      console.warn("AI recommendation failed, serving agronomic engine recommendations:", err);
     }
 
     return generateAgronomicRecommendations(data);
@@ -515,6 +483,23 @@ Farmer profile:
 ${profileLines}`
     : `Give clear best-practice advice for the specific crop or farming question asked.`
 }`;
+
+    // Try Gemini API first if configured
+    const hasGeminiKey =
+      !!process.env.GEMINI_API_KEY ||
+      !!process.env.VITE_GEMINI_API_KEY;
+
+    if (hasGeminiKey && !isTest) {
+      try {
+        return await askGemini({
+          messages: data.messages,
+          language: data.language,
+          profile: data.profile,
+        });
+      } catch (geminiErr) {
+        console.warn("Gemini API call failed, attempting fallback AI gateway:", geminiErr);
+      }
+    }
 
     try {
       const json = await callAI({

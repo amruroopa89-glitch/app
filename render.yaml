@@ -24,6 +24,10 @@ services:
       - key: OPENROUTER_API_KEY
         sync: false
       - key: OPENROUTER_MODEL
-        value: openai/gpt-oss-20b:free
+        value: google/gemini-2.0-flash-exp:free
       - key: OPENROUTER_VISION_MODEL
-        value: openrouter/free
+        value: google/gemini-flash-1.5:free
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: VITE_GEMINI_API_KEY
+        sync: false
