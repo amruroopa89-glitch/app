@@ -49,38 +49,82 @@ function AuthPage() {
   // Handle OAuth callback
   useEffect(() => {
     const handleOAuthCallback = async () => {
+      console.log('[Google OAuth Callback] Starting callback handler');
+      console.log('[Google OAuth Callback] Current URL:', window.location.href);
+      console.log('[Google OAuth Callback] URL Hash:', window.location.hash);
+      
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
+      const type = hashParams.get('type');
+      const errorParam = hashParams.get('error');
+      const errorDescription = hashParams.get('error_description');
       
+      console.log('[Google OAuth Callback] Hash Parameters:', {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        type: type,
+        error: errorParam,
+        errorDescription: errorDescription,
+      });
+      
+      // Check if this is an error callback
+      if (errorParam) {
+        console.error('[Google OAuth Callback] Error in callback:', errorParam, errorDescription);
+        toast.error('Google Sign-In failed: ' + (errorDescription || errorParam));
+        return;
+      }
+      
+      // CRITICAL: Check if this is a password recovery token (type=recovery)
+      // Google OAuth will NOT have type=recovery
+      if (type === 'recovery') {
+        console.log('[Google OAuth Callback] This is a PASSWORD RECOVERY token, not OAuth');
+        console.log('[Google OAuth Callback] Redirecting to reset-password page');
+        navigate({ to: '/reset-password' });
+        return;
+      }
+      
+      // If we have an access token without type=recovery, it's OAuth
       if (accessToken) {
-        console.log('[Google OAuth] Callback detected with access token');
+        console.log('[Google OAuth Callback] ✅ Valid OAuth access token detected');
+        console.log('[Google OAuth Callback] Token type:', type || 'implicit (OAuth)');
+        
         try {
+          console.log('[Google OAuth Callback] Setting session with access token...');
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken || '',
           });
           
           if (error) {
-            console.error('[Google OAuth] Session error:', error);
+            console.error('[Google OAuth Callback] ❌ Session error:', error);
             toast.error('Failed to complete Google sign-in: ' + error.message);
-          } else if (data?.session) {
-            console.log('[Google OAuth] Session established successfully');
+            return;
+          }
+          
+          if (data?.session) {
+            console.log('[Google OAuth Callback] ✅ Session established successfully');
+            console.log('[Google OAuth Callback] User:', data.session.user?.email);
+            console.log('[Google OAuth Callback] Provider:', data.session.user?.app_metadata?.provider);
             
             // If opened in popup, close the popup and notify parent
             if (window.opener && !window.opener.closed) {
-              console.log('[Google OAuth] Running in popup, closing...');
+              console.log('[Google OAuth Callback] Running in popup window, closing...');
               window.close();
             } else {
               // Running in main window
+              console.log('[Google OAuth Callback] Running in main window, navigating to /home');
               toast.success("Welcome! Signed in with Google 🎉");
               // Clear the hash from URL
               window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
               navigate({ to: "/home" });
             }
+          } else {
+            console.error('[Google OAuth Callback] ❌ No session data returned');
+            toast.error('Failed to establish session');
           }
         } catch (err) {
-          console.error('[Google OAuth] Callback error:', err);
+          console.error('[Google OAuth Callback] ❌ Callback error:', err);
           toast.error('Failed to complete sign-in');
           
           // If in popup, still close it
@@ -88,6 +132,8 @@ function AuthPage() {
             setTimeout(() => window.close(), 1000);
           }
         }
+      } else {
+        console.log('[Google OAuth Callback] No access token in URL, skipping callback handler');
       }
     };
 
@@ -134,11 +180,19 @@ function AuthPage() {
   };
 
   const signInWithGoogle = async () => {
+    console.log('[Google OAuth] ========================================');
+    console.log('[Google OAuth] INITIATING GOOGLE SIGN-IN');
+    console.log('[Google OAuth] ========================================');
+    
     setLoading(true);
     try {
       const redirectUrl = `${window.location.origin}/auth`;
       
-      console.log('[Google OAuth] Initiating sign in with redirect:', redirectUrl);
+      console.log('[Google OAuth] Configuration:');
+      console.log('[Google OAuth]   - Redirect URL:', redirectUrl);
+      console.log('[Google OAuth]   - Current URL:', window.location.href);
+      console.log('[Google OAuth]   - Provider: google');
+      console.log('[Google OAuth]   - Query Params: access_type=offline, prompt=select_account');
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -153,18 +207,25 @@ function AuthPage() {
       });
 
       if (error) {
-        console.error('[Google OAuth] Error:', error);
+        console.error('[Google OAuth] ❌ Error initiating OAuth:', error);
         throw error;
       }
 
-      console.log('[Google OAuth] Response data:', data);
+      console.log('[Google OAuth] ✅ OAuth initiated successfully');
+      console.log('[Google OAuth] Response data:', {
+        hasUrl: !!data?.url,
+        url: data?.url?.substring(0, 100) + '...',
+        provider: data?.provider,
+      });
 
       if (data?.url) {
         // For mobile (Capacitor) - use in-app browser
         if (window.Capacitor?.isNativePlatform()) {
+          console.log('[Google OAuth] Platform: Mobile (Capacitor)');
           try {
             const { Browser } = await import("@capacitor/browser");
             
+            console.log('[Google OAuth] Opening in-app browser...');
             // Open in-app browser
             await Browser.open({ 
               url: data.url,
@@ -175,27 +236,36 @@ function AuthPage() {
 
             // Listen for the browser to close
             Browser.addListener('browserFinished', async () => {
-              console.log('[Google OAuth] Browser closed, checking session...');
+              console.log('[Google OAuth] In-app browser closed');
+              console.log('[Google OAuth] Checking for established session...');
               const { data: sessionData } = await supabase.auth.getSession();
+              
               if (sessionData?.session) {
+                console.log('[Google OAuth] ✅ Session found!');
+                console.log('[Google OAuth] User:', sessionData.session.user?.email);
+                console.log('[Google OAuth] Provider:', sessionData.session.user?.app_metadata?.provider);
                 toast.success("Welcome! Signed in with Google 🎉");
                 navigate({ to: "/home" });
+              } else {
+                console.log('[Google OAuth] ❌ No session found after browser close');
               }
               setLoading(false);
             });
 
             return; // Don't set loading to false yet
           } catch (browserErr) {
-            console.error('[Google OAuth] Capacitor Browser error:', browserErr);
+            console.error('[Google OAuth] ❌ Capacitor Browser error:', browserErr);
           }
         }
         
         // For web browser - open popup window
+        console.log('[Google OAuth] Platform: Web Browser');
         const width = 500;
         const height = 600;
         const left = window.screen.width / 2 - width / 2;
         const top = window.screen.height / 2 - height / 2;
         
+        console.log('[Google OAuth] Opening popup window:', { width, height, left, top });
         const popup = window.open(
           data.url,
           'Google Sign In',
@@ -204,52 +274,76 @@ function AuthPage() {
 
         if (!popup) {
           // Popup blocked, fallback to redirect
-          console.log('[Google OAuth] Popup blocked, using redirect');
+          console.log('[Google OAuth] ⚠️ Popup blocked by browser');
+          console.log('[Google OAuth] Falling back to full page redirect');
           window.location.href = data.url;
           return;
         }
 
+        console.log('[Google OAuth] Popup opened successfully');
+        console.log('[Google OAuth] Starting session polling (every 500ms)...');
+        
         // Poll for popup closure and session establishment
         const checkInterval = setInterval(async () => {
           try {
             if (popup.closed) {
               clearInterval(checkInterval);
-              console.log('[Google OAuth] Popup closed, checking session...');
+              console.log('[Google OAuth] Popup window closed');
+              console.log('[Google OAuth] Checking for established session...');
               
               const { data: sessionData } = await supabase.auth.getSession();
+              
               if (sessionData?.session) {
+                console.log('[Google OAuth] ✅ Session found!');
+                console.log('[Google OAuth] User:', sessionData.session.user?.email);
+                console.log('[Google OAuth] Provider:', sessionData.session.user?.app_metadata?.provider);
+                console.log('[Google OAuth] Navigating to /home');
                 toast.success("Welcome! Signed in with Google 🎉");
                 navigate({ to: "/home" });
               } else {
+                console.log('[Google OAuth] ❌ No session found after popup close');
                 setLoading(false);
               }
             }
           } catch (e) {
-            // Cross-origin errors are expected
+            // Cross-origin errors are expected while popup is on different domain
           }
         }, 500);
 
         // Timeout after 5 minutes
         setTimeout(() => {
           clearInterval(checkInterval);
+          console.log('[Google OAuth] ⏱️ Polling timeout reached (5 minutes)');
           if (!popup.closed) {
+            console.log('[Google OAuth] Closing abandoned popup');
             popup.close();
           }
           setLoading(false);
         }, 300000);
 
       } else {
-        console.log('[Google OAuth] No URL returned, checking session...');
+        console.log('[Google OAuth] ⚠️ No URL returned from OAuth provider');
+        console.log('[Google OAuth] Checking if session already exists...');
         const { data: sessionData } = await supabase.auth.getSession();
+        
         if (sessionData?.session) {
+          console.log('[Google OAuth] ✅ Existing session found!');
+          console.log('[Google OAuth] User:', sessionData.session.user?.email);
           toast.success("Welcome back!");
           navigate({ to: "/home" });
         } else {
+          console.error('[Google OAuth] ❌ No OAuth URL and no existing session');
           throw new Error("No OAuth URL returned and no active session");
         }
       }
     } catch (err: any) {
-      console.error("[Google OAuth] Full error:", err);
+      console.error("[Google OAuth] ❌ FATAL ERROR:", err);
+      console.error("[Google OAuth] Error details:", {
+        message: err?.message,
+        name: err?.name,
+        stack: err?.stack,
+      });
+      
       const msg = err?.message || "Google Sign-In failed";
       
       if (
@@ -267,6 +361,10 @@ function AuthPage() {
       }
       setLoading(false);
     }
+    
+    console.log('[Google OAuth] ========================================');
+    console.log('[Google OAuth] Sign-in initiation complete');
+    console.log('[Google OAuth] ========================================');
   };
 
   return (
