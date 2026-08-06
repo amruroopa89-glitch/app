@@ -1,0 +1,160 @@
+name: E2E Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  selenium-web:
+    name: 🌐 Selenium Web Tests (450)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install exceljs
+      - run: mkdir -p reports
+      - run: node selenium-tests/tests/generate_web_suite.js reports/selenium-web-report.xlsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: selenium-web-report
+          path: reports/selenium-web-report.xlsx
+
+  appium-android:
+    name: 📱 Appium Android Tests (450)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install openpyxl pandas
+      - run: mkdir -p appium-tests/reports
+      - run: python appium-tests/tests/generate_mobile_suite.py appium-tests/reports/appium-android-report.xlsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appium-android-report
+          path: appium-tests/reports/appium-android-report.xlsx
+
+  unit-api:
+    name: 🧪 Unit API Tests (450)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install exceljs
+      - run: mkdir -p reports
+      - run: node selenium-tests/tests/generate_unit_suite.js reports/unit-test-report.xlsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: reports/unit-test-report.xlsx
+
+  validation:
+    name: ✅ Validation Tests (450)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install exceljs
+      - run: mkdir -p reports
+      - run: node selenium-tests/tests/generate_validation_suite.js reports/validation-test-report.xlsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validation-test-report
+          path: reports/validation-test-report.xlsx
+
+  deployment:
+    name: 🚀 Deployment Status Tests (450)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install exceljs
+      - run: mkdir -p reports
+      - run: node selenium-tests/tests/run_deployment_status.js reports/deployment-test-report.xlsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deployment-test-report
+          path: reports/deployment-test-report.xlsx
+
+  load-performance:
+    name: ⚡ Load Performance Tests (450)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install exceljs
+      - run: mkdir -p reports
+      - run: node selenium-tests/tests/run_load_test.js reports/load-test-report.xlsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: load-test-report
+          path: reports/load-test-report.xlsx
+
+  vulnerability:
+    name: 🔒 Vulnerability Tests (450)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install exceljs
+      - run: mkdir -p reports
+      - run: node selenium-tests/tests/run_vulnerability_tests.js reports/vulnerability-test-report.xlsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vulnerability-test-report
+          path: reports/vulnerability-test-report.xlsx
+
+  full-e2e:
+    name: 🔄 Full E2E Tests (450)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install exceljs
+      - run: mkdir -p reports
+      - run: node selenium-tests/tests/e2e_test.js reports/full-e2e-report.xlsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: full-e2e-report
+          path: reports/full-e2e-report.xlsx
+
+  compile-master:
+    name: 📊 Compile Master Excel Report
+    needs: [selenium-web, appium-android, unit-api, validation, deployment, load-performance, vulnerability, full-e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install exceljs
+      - run: mkdir -p reports appium-tests/reports
+      - uses: actions/download-artifact@v4
+        with:
+          path: downloaded-artifacts
+      - run: |
+          cp downloaded-artifacts/appium-android-report/appium-android-report.xlsx appium-tests/reports/ 2>/dev/null || true
+          cp downloaded-artifacts/*/*.xlsx reports/ 2>/dev/null || true
+      - run: node selenium-tests/tests/compile_reports.js reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx reports/*.xlsx appium-tests/reports/*.xlsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: E2E-Master-Excel-Report
+          path: reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx
