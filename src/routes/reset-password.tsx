@@ -33,8 +33,14 @@ function ResetPasswordPage() {
       const hash = window.location.hash;
       console.log("Reset password page hash:", hash);
 
-      // Check if this is a password recovery link
-      if (hash.includes("type=recovery") || hash.includes("access_token")) {
+      // Parse hash parameters
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const type = hashParams.get('type');
+      const accessToken = hashParams.get('access_token');
+
+      // Only consider it valid if type=recovery (password recovery)
+      // Don't accept OAuth tokens (which don't have type=recovery)
+      if (type === 'recovery' && accessToken) {
         console.log("Valid recovery hash detected");
         setIsValidToken(true);
         return;

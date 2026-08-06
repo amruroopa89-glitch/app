@@ -18,9 +18,14 @@ function Welcome() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if URL has password recovery token
+    // Check if URL has password recovery token (not OAuth token)
     const hash = window.location.hash;
-    if (hash.includes('type=recovery') || hash.includes('access_token')) {
+    const searchParams = new URLSearchParams(hash.substring(1));
+    const type = searchParams.get('type');
+    
+    // Only redirect to reset-password if it's explicitly a recovery type
+    // Don't redirect OAuth access_tokens
+    if (type === 'recovery') {
       console.log('Password recovery token detected on homepage, redirecting to /reset-password');
       // Redirect to reset-password page with the hash
       navigate({ to: '/reset-password' });
