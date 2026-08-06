@@ -75,8 +75,20 @@ function AuthPage() {
           redirectTo: window.location.origin + "/reset-password",
         });
         if (error) throw error;
-        toast.success("Reset link sent. Check your email 📧");
-        setMode("signin");
+        
+        if (
+          import.meta.env.VITE_USE_MOCK_SUPABASE === "true" ||
+          (typeof window !== "undefined" && window.location.search.includes("mock=true"))
+        ) {
+          toast.success("Mock Mode: Directing to password reset page 🔐");
+          navigate({
+            to: "/reset-password",
+            hash: "access_token=mock-reset-token&type=recovery",
+          });
+        } else {
+          toast.success("Reset link sent. Check your email 📧");
+          setMode("signin");
+        }
       }
     } catch (err) {
       toast.error((err as Error).message);

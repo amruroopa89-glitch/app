@@ -38,13 +38,28 @@ function ResetPasswordPage() {
       console.log("[Reset Password] URL hash:", hash);
       console.log("[Reset Password] URL search:", search);
 
-      // Parse hash parameters
+      // Parse hash & query parameters
       const hashParams = new URLSearchParams(hash.substring(1));
+      const queryParams = new URLSearchParams(search);
+
+      // Check for error responses from Supabase (e.g., expired token)
+      const urlError = queryParams.get("error") || hashParams.get("error");
+      const urlErrorDesc = queryParams.get("error_description") || hashParams.get("error_description");
+
+      if (urlError || urlErrorDesc) {
+        console.error("[Reset Password] Link error detected:", urlError, urlErrorDesc);
+        const cleanMsg = urlErrorDesc
+          ? decodeURIComponent(urlErrorDesc).replace(/\+/g, " ")
+          : "Invalid or expired reset link. Please request a new one.";
+        toast.error(cleanMsg);
+        setTimeout(() => {
+          navigate({ to: "/auth", search: { mode: "forgot" } });
+        }, 1500);
+        return;
+      }
+
       const type = hashParams.get('type');
       const accessToken = hashParams.get('access_token');
-      
-      // Parse query parameters (for code-based auth flow)
-      const queryParams = new URLSearchParams(search);
       const code = queryParams.get('code');
 
       console.log("[Reset Password] Parameters:", {

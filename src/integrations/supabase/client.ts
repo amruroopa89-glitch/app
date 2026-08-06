@@ -6,6 +6,12 @@ function shouldMock(url: string): boolean {
   if (typeof window !== "undefined" && window.location.search.includes("mock=true")) {
     return true;
   }
+  if (
+    typeof import.meta !== "undefined" &&
+    (import.meta.env?.VITE_USE_MOCK_SUPABASE === "true" || import.meta.env?.VITE_USE_MOCK === "true")
+  ) {
+    return true;
+  }
   if (!url || url.includes("your_supabase_project_url")) {
     return true;
   }
@@ -239,7 +245,43 @@ function createMockSupabaseClient() {
       };
     },
     async resetPasswordForEmail(email: string, options: any) {
-      return { data: {}, error: null };
+      if (!email) {
+        return { data: null, error: { message: "Email is required" } };
+      }
+      if (!isValidEmail(email)) {
+        return { data: null, error: { message: "Invalid email format" } };
+      }
+      const users = getMockUsers();
+      let user = users.find((u: any) => u.email === email);
+      if (!user) {
+        user = {
+          id: "mock-user-" + Math.random().toString(36).substr(2, 9),
+          email,
+          user_metadata: { full_name: "Farmer" },
+        };
+        users.push({ ...user, password: "password123" });
+        saveMockUsers(users);
+      }
+      const session = {
+        access_token: "mock-reset-token-" + Math.random().toString(36).substr(2, 9),
+        user: { id: user.id, email: user.email, user_metadata: user.user_metadata },
+      };
+      saveMockSession(session);
+      setTimeout(() => triggerAuthChange("PASSWORD_RECOVERY", session), 0);
+      return { data: { email }, error: null };
+    },
+    async updateUser(attributes: any) {
+      const session = getMockSession();
+      if (!session?.user) {
+        return { data: { user: null }, error: { message: "No active session to update password" } };
+      }
+      const users = getMockUsers();
+      const user = users.find((u: any) => u.id === session.user.id || u.email === session.user.email);
+      if (user && attributes.password) {
+        user.password = attributes.password;
+        saveMockUsers(users);
+      }
+      return { data: { user: session.user }, error: null };
     },
     async signInWithOtp({ phone }: any) {
       if (!phone) {
@@ -415,8 +457,8 @@ function createMockSupabaseClient() {
 function createSupabaseClient() {
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const SUPABASE_ANON_KEY =
-    import.meta.env.VITE_SUPABASE_ANON_KEY || 
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 
+    import.meta.env.VITE_SUPABASE_ANON_KEY || 
     process.env.SUPABASE_PUBLISHABLE_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY || shouldMock(SUPABASE_URL)) {
