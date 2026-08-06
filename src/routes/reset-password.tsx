@@ -28,29 +28,66 @@ function ResetPasswordPage() {
   useEffect(() => {
     let mounted = true;
 
-    // Check URL hash for recovery token
+  useEffect(() => {
+    let mounted = true;
+
+    // Check URL hash AND query parameters for recovery token
     const checkToken = async () => {
       const hash = window.location.hash;
-      console.log("Reset password page hash:", hash);
+      const search = window.location.search;
+      
+      console.log("[Reset Password] Page loaded");
+      console.log("[Reset Password] URL hash:", hash);
+      console.log("[Reset Password] URL search:", search);
 
       // Parse hash parameters
       const hashParams = new URLSearchParams(hash.substring(1));
       const type = hashParams.get('type');
       const accessToken = hashParams.get('access_token');
+      
+      // Parse query parameters (for code-based auth flow)
+      const queryParams = new URLSearchParams(search);
+      const code = queryParams.get('code');
 
-      // Only consider it valid if type=recovery (password recovery)
-      // Don't accept OAuth tokens (which don't have type=recovery)
+      console.log("[Reset Password] Parameters:", {
+        hashType: type,
+        hasHashAccessToken: !!accessToken,
+        hasQueryCode: !!code,
+      });
+
+      // CRITICAL CHECK: Reject if this looks like OAuth
+      // OAuth tokens will have access_token but NO type=recovery
+      // OR they might have a code parameter
+      if (accessToken && type !== 'recovery') {
+        console.error("[Reset Password] ❌ This looks like an OAuth token, not password recovery!");
+        console.error("[Reset Password] Redirecting to /auth for proper OAuth handling");
+        toast.error("This link is not for password reset. Redirecting to sign in...");
+        navigate({ to: "/auth" });
+        return;
+      }
+
+      // If there's a code parameter but no type, it's likely OAuth
+      if (code && !type) {
+        console.error("[Reset Password] ❌ Query code detected without type=recovery");
+        console.error("[Reset Password] This is likely an OAuth callback, redirecting to /auth");
+        toast.error("Invalid password reset link. Please sign in normally.");
+        navigate({ to: "/auth" });
+        return;
+      }
+
+      // Only accept if type=recovery is explicitly present
       if (type === 'recovery' && accessToken) {
-        console.log("Valid recovery hash detected");
+        console.log("[Reset Password] ✅ Valid recovery hash detected");
         setIsValidToken(true);
         return;
       }
 
-      // Check current session
+      // Check current session (user might be already authenticated)
       const { data: { session } } = await supabase.auth.getSession();
-      console.log("Current session:", session ? "exists" : "none");
+      console.log("[Reset Password] Current session:", session ? "exists" : "none");
       
       if (session) {
+        console.log("[Reset Password] Active session found, allowing password change");
         setIsValidToken(true);
         return;
       }
@@ -62,7 +99,7 @@ function ResetPasswordPage() {
         if (s) {
           setIsValidToken(true);
         } else {
-          console.error("No valid session or recovery token found");
+          console.error("[Reset Password] ❌ No valid session or recovery token found");
           toast.error("Invalid or expired reset link. Please request a new one.");
           setTimeout(() => {
             navigate({ to: "/auth", search: { mode: "forgot" } });

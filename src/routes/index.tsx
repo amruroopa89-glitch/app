@@ -18,17 +18,42 @@ function Welcome() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if URL has password recovery token (not OAuth token)
+    // CRITICAL: Do NOT redirect OAuth tokens
+    // Only redirect password recovery tokens that explicitly have type=recovery
     const hash = window.location.hash;
+    
+    // If there's no hash, nothing to process
+    if (!hash || hash.length < 2) {
+      return;
+    }
+    
+    console.log('[Index Page] URL hash detected:', hash);
+    
     const searchParams = new URLSearchParams(hash.substring(1));
     const type = searchParams.get('type');
+    const accessToken = searchParams.get('access_token');
     
-    // Only redirect to reset-password if it's explicitly a recovery type
-    // Don't redirect OAuth access_tokens
-    if (type === 'recovery') {
-      console.log('Password recovery token detected on homepage, redirecting to /reset-password');
-      // Redirect to reset-password page with the hash
+    console.log('[Index Page] Hash parameters:', {
+      type: type,
+      hasAccessToken: !!accessToken,
+    });
+    
+    // ONLY redirect if:
+    // 1. There's an access_token AND
+    // 2. The type is explicitly 'recovery'
+    // 
+    // If type is null/undefined but there's an access_token,
+    // it's likely an OAuth token, so DON'T redirect
+    if (accessToken && type === 'recovery') {
+      console.log('[Index Page] Password recovery token confirmed, redirecting to /reset-password');
       navigate({ to: '/reset-password' });
+    } else if (accessToken && !type) {
+      console.log('[Index Page] OAuth token detected (no type parameter)');
+      console.log('[Index Page] Redirecting to /auth for OAuth processing');
+      // Redirect to auth page so it can process the OAuth token
+      navigate({ to: '/auth' });
+    } else {
+      console.log('[Index Page] No relevant tokens found, staying on welcome page');
     }
   }, [navigate]);
   return (
