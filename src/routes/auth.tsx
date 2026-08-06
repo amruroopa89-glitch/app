@@ -255,21 +255,13 @@ function Field({
   inputMode?: React.ComponentProps<"input">["inputMode"];
   autoComplete?: string;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
   return (
     <div
-      onClick={() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }}
-      className="flex items-center gap-3 rounded-xl border border-gray-300 bg-white px-3.5 min-h-[52px] cursor-text focus-within:ring-2 focus-within:ring-green-600 focus-within:border-green-600 transition-all relative z-10"
+      className="flex items-center gap-3 rounded-xl border border-gray-300 bg-white px-3.5 min-h-[52px] focus-within:ring-2 focus-within:ring-green-600 focus-within:border-green-600 transition-all relative z-10"
       style={{ backgroundColor: "#ffffff" }}
     >
       <span className="text-gray-400 flex-shrink-0 pointer-events-none">{icon}</span>
       <input
-        ref={inputRef}
         id={id}
         name={id}
         type={type}
@@ -282,19 +274,15 @@ function Field({
         autoCapitalize={type === "email" || inputMode === "email" ? "none" : "words"}
         spellCheck={false}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full min-w-0 bg-white py-3 outline-none border-none text-base font-normal text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0"
+        className="w-full min-w-0 bg-transparent py-3 outline-none border-none text-base font-normal text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0"
         style={{
           fontSize: "16px",
           color: "#111827",
-          WebkitTextFillColor: "#111827",
           caretColor: "#166534",
-          backgroundColor: "#ffffff",
           opacity: 1,
-          WebkitAppearance: "none",
-          MozAppearance: "none",
-          appearance: "none",
         }}
       />
     </div>
   );
 }
+
