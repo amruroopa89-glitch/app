@@ -5,6 +5,15 @@ import { Leaf, Mail, Lock, Phone, User } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
+// Type declaration for Capacitor
+declare global {
+  interface Window {
+    Capacitor?: {
+      isNativePlatform: () => boolean;
+    };
+  }
+}
+
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => ({
     mode: (typeof search.mode === "string" && ["signin", "signup", "forgot"].includes(search.mode)
@@ -57,14 +66,27 @@ function AuthPage() {
             toast.error('Failed to complete Google sign-in: ' + error.message);
           } else if (data?.session) {
             console.log('[Google OAuth] Session established successfully');
-            toast.success("Welcome! Signed in with Google 🎉");
-            // Clear the hash from URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-            navigate({ to: "/home" });
+            
+            // If opened in popup, close the popup and notify parent
+            if (window.opener && !window.opener.closed) {
+              console.log('[Google OAuth] Running in popup, closing...');
+              window.close();
+            } else {
+              // Running in main window
+              toast.success("Welcome! Signed in with Google 🎉");
+              // Clear the hash from URL
+              window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+              navigate({ to: "/home" });
+            }
           }
         } catch (err) {
           console.error('[Google OAuth] Callback error:', err);
           toast.error('Failed to complete sign-in');
+          
+          // If in popup, still close it
+          if (window.opener && !window.opener.closed) {
+            setTimeout(() => window.close(), 1000);
+          }
         }
       }
     };
@@ -124,8 +146,9 @@ function AuthPage() {
           redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account',
           },
+          skipBrowserRedirect: false,
         },
       });
 
@@ -137,22 +160,84 @@ function AuthPage() {
       console.log('[Google OAuth] Response data:', data);
 
       if (data?.url) {
-        // For mobile (Capacitor)
+        // For mobile (Capacitor) - use in-app browser
         if (window.Capacitor?.isNativePlatform()) {
           try {
             const { Browser } = await import("@capacitor/browser");
+            
+            // Open in-app browser
             await Browser.open({ 
               url: data.url,
-              windowName: '_self',
+              windowName: '_blank',
+              toolbarColor: '#16a34a',
+              presentationStyle: 'popover',
             });
+
+            // Listen for the browser to close
+            Browser.addListener('browserFinished', async () => {
+              console.log('[Google OAuth] Browser closed, checking session...');
+              const { data: sessionData } = await supabase.auth.getSession();
+              if (sessionData?.session) {
+                toast.success("Welcome! Signed in with Google 🎉");
+                navigate({ to: "/home" });
+              }
+              setLoading(false);
+            });
+
+            return; // Don't set loading to false yet
           } catch (browserErr) {
             console.error('[Google OAuth] Capacitor Browser error:', browserErr);
-            window.location.href = data.url;
           }
-        } else {
-          // For web browser
-          window.location.href = data.url;
         }
+        
+        // For web browser - open popup window
+        const width = 500;
+        const height = 600;
+        const left = window.screen.width / 2 - width / 2;
+        const top = window.screen.height / 2 - height / 2;
+        
+        const popup = window.open(
+          data.url,
+          'Google Sign In',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no`
+        );
+
+        if (!popup) {
+          // Popup blocked, fallback to redirect
+          console.log('[Google OAuth] Popup blocked, using redirect');
+          window.location.href = data.url;
+          return;
+        }
+
+        // Poll for popup closure and session establishment
+        const checkInterval = setInterval(async () => {
+          try {
+            if (popup.closed) {
+              clearInterval(checkInterval);
+              console.log('[Google OAuth] Popup closed, checking session...');
+              
+              const { data: sessionData } = await supabase.auth.getSession();
+              if (sessionData?.session) {
+                toast.success("Welcome! Signed in with Google 🎉");
+                navigate({ to: "/home" });
+              } else {
+                setLoading(false);
+              }
+            }
+          } catch (e) {
+            // Cross-origin errors are expected
+          }
+        }, 500);
+
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          if (!popup.closed) {
+            popup.close();
+          }
+          setLoading(false);
+        }, 300000);
+
       } else {
         console.log('[Google OAuth] No URL returned, checking session...');
         const { data: sessionData } = await supabase.auth.getSession();
@@ -180,7 +265,6 @@ function AuthPage() {
       } else {
         toast.error(msg);
       }
-    } finally {
       setLoading(false);
     }
   };
