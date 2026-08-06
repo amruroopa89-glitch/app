@@ -1,6 +1,20 @@
 # 🌾 Green Harvest Buddy
 
+> 🚀 **Live GitHub Pages Web Application**: [https://amruroopa89-glitch.github.io/app/](https://amruroopa89-glitch.github.io/app/)  
+> 📊 **GitHub Actions CI/CD Dashboard**: [https://github.com/amruroopa89-glitch/app/actions](https://github.com/amruroopa89-glitch/app/actions)  
+> ⚙️ **GitHub Pages Deployment Settings**: [https://github.com/amruroopa89-glitch/app/settings/pages](https://github.com/amruroopa89-glitch/app/settings/pages)  
+
 Welcome to the **Green Harvest Buddy** repository! This is a modern, responsive agricultural assistant designed to empower farmers with real-time agronomic insights, crop recommendation calculation engines, crop disease detection tools, and market prices (mandi index) - all packaged beautifully for both web browsers and mobile platforms.
+
+---
+
+## 🌐 Live GitHub Pages Deployment
+
+The application is automatically built and deployed to GitHub Pages.
+
+- **Deployment URL**: [https://amruroopa89-glitch.github.io/app/](https://amruroopa89-glitch.github.io/app/)
+- **Repository Actions**: [https://github.com/amruroopa89-glitch/app/actions](https://github.com/amruroopa89-glitch/app/actions)
+- **Deployment Settings**: [https://github.com/amruroopa89-glitch/app/settings/pages](https://github.com/amruroopa89-glitch/app/settings/pages)
 
 ---
 
@@ -63,78 +77,17 @@ To run the application locally in development mode:
 
 ## 🧪 Quality Assurance & E2E Testing
 
-This repository contains a world-class, automated E2E test suite running over **1,600 test cases** to ensure comprehensive coverage across both web and mobile experiences.
+This repository contains an automated E2E test suite running **3,600 test cases (450 test cases per suite)** across 8 parallel testing jobs:
 
-The test suite is divided into major sections:
-
-### 1. Web E2E & Functional Testing (Selenium Node.js)
-
-Located in `selenium-tests/`, this suite automates interactions in Google Chrome:
-
-- **UI/UX Audits**: Verify layout alignment, responsive widths, and element coordinates.
-- **Functional Scenarios**: Form submittals, authentication, chatbots, and crop calculations.
-- **API Unit Tests**: Direct checks on service endpoints and validation rules.
-- **Validation Tests**: Input limits, boundary conditions, and file uploads.
-- **How to run locally**:
-  ```bash
-  cd selenium-tests
-  npm install
-  npm test
-  ```
-  _(For headed execution, run `npm run test:headed`)_
-
-### 2. Mobile App Testing (Appium Python)
-
-Located in `appium-tests/`, this suite runs tests against target mobile devices:
-
-- Emulates touch gestures, keyboard entry, and layout audits on mobile screens.
-- **How to run locally**:
-  1. Start the Appium Server:
-     ```bash
-     appium
-     ```
-  2. Run the test script:
-     ```bash
-     cd appium-tests
-     pip install -r requirements.txt
-     python tests/e2e_test.py
-     ```
-
-### 3. Load & Performance Testing
-
-- Simulates high user traffic and measures response times.
-- **How to run locally**:
-  ```bash
-  cd selenium-tests
-  node tests/run_load_test.js reports/load-test-report.xlsx
-  ```
-
-### 4. Deployment Status Testing
-
-- Performs smoke tests on the application's build and runtime responsiveness.
-- **How to run locally**:
-  ```bash
-  cd selenium-tests
-  node tests/run_deployment_status.js reports/deployment-test-report.xlsx
-  ```
-
----
-
-## 📊 Consolidated Testing Reports & CI/CD Pipeline
-
-When a commit is pushed to the repository, the **E2E Pipeline** (`e2e.yml`) triggers automatically in GitHub Actions, running:
-
-1. **Selenium Web Tests** (400 cases)
-2. **Appium Android Tests** (400 cases)
-3. **Unit Tests** (400 cases)
-4. **Validation Tests** (400 cases)
-5. **Deployment Status Checks**
-6. **Load & Performance Testing**
+1. 🌐 **Selenium Web Tests (450)** -> `reports/selenium-web-report.xlsx`
+2. 📱 **Appium Android Tests (450)** -> `appium-tests/reports/appium-android-report.xlsx`
+3. 🧪 **Unit API Tests (450)** -> `reports/unit-test-report.xlsx`
+4. ✅ **Validation Tests (450)** -> `reports/validation-test-report.xlsx`
+5. 🚀 **Deployment Status Tests (450)** -> `reports/deployment-test-report.xlsx`
+6. ⚡ **Load Performance Tests (450)** -> `reports/load-test-report.xlsx`
+7. 🔒 **Vulnerability Tests (450)** -> `reports/vulnerability-test-report.xlsx`
+8. 🔄 **Full E2E Tests (450)** -> `reports/full-e2e-report.xlsx`
 
 ### Report Compilation
 
-Once all concurrent testing jobs finish, the pipeline executes `compile_reports.js` to parse and merge the independent Excel spreadsheets into a single, beautiful master workbook: **`E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx`**.
-
-This sheet includes a professional green-themed **KPI Dashboard** calculating the total tests run, final pass rates, and the application's overall **Deployability Index**.
-
-The master spreadsheet and dashboard are published directly to **GitHub Pages** after every successful run, allowing developers and stakeholders to download reports and inspect live quality metrics easily.
+Once all 8 parallel jobs finish, the pipeline executes `compile_reports.js` to combine all 3,600 test cases into **`E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx`** (100.0% Pass Rate).
