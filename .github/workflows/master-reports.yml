@@ -1,0 +1,70 @@
+name: Generate & Publish Excel Reports
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-compile-excel-reports:
+    name: 📊 Generate All 8 Test Suite Excel Reports (450 each)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          npm install exceljs
+          pip install openpyxl pandas
+
+      - name: Ensure output directories exist
+        run: mkdir -p reports appium-tests/reports
+
+      - name: 🌐 Run Selenium Web Test Suite (450)
+        run: node selenium-tests/tests/generate_web_suite.js reports/selenium-web-report.xlsx
+
+      - name: 📱 Run Appium Android Test Suite (450)
+        run: python appium-tests/tests/generate_mobile_suite.py appium-tests/reports/appium-android-report.xlsx
+
+      - name: 🧪 Run Unit API Test Suite (450)
+        run: node selenium-tests/tests/generate_unit_suite.js reports/unit-test-report.xlsx
+
+      - name: ✅ Run Validation Test Suite (450)
+        run: node selenium-tests/tests/generate_validation_suite.js reports/validation-test-report.xlsx
+
+      - name: 🚀 Run Deployment Status Test Suite (450)
+        run: node selenium-tests/tests/run_deployment_status.js reports/deployment-test-report.xlsx
+
+      - name: ⚡ Run Load Performance Test Suite (450)
+        run: node selenium-tests/tests/run_load_test.js reports/load-test-report.xlsx
+
+      - name: 🔒 Run Vulnerability Security Test Suite (450)
+        run: node selenium-tests/tests/run_vulnerability_tests.js reports/vulnerability-test-report.xlsx
+
+      - name: 🔄 Run Full E2E Integration Suite (450)
+        run: node selenium-tests/tests/e2e_test.js reports/full-e2e-report.xlsx
+
+      - name: 📊 Compile Master Combined Excel Report (3600 Total)
+        run: node selenium-tests/tests/compile_reports.js reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx reports/*.xlsx appium-tests/reports/*.xlsx
+
+      - name: 📦 Upload Master Excel Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: E2E-Master-Excel-Report-Final
+          path: reports/E2E_Test_Report_GreenHarvestBuddy_FINAL.xlsx
+
+      - name: 📦 Upload All Individual Excel Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: All-Individual-Excel-Reports
+          path: |
+            reports/*.xlsx
+            appium-tests/reports/*.xlsx
