@@ -206,3 +206,111 @@ Return ONLY valid JSON in this exact structure without markdown code blocks:
 
   return null;
 }
+
+export async function detectDiseaseGemini(data: {
+  imageDataUrl: string;
+  crop?: string;
+  language?: string;
+}): Promise<{
+  name: string;
+  confidence: number;
+  severity: string;
+  symptoms: string;
+  treatment: string;
+  prevent: string;
+} | null> {
+  const apiKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.VITE_GEMINI_API_KEY ||
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_GEMINI_API_KEY);
+
+  if (!apiKey) return null;
+
+  const match = data.imageDataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+  const mimeType = match ? match[1] : "image/jpeg";
+  const base64Data = match ? match[2] : data.imageDataUrl.replace(/^data:image\/[a-zA-Z+]+;base64,/, "");
+
+  const prompt = `You are a plant pathologist and agricultural computer vision expert.
+Analyze the provided image carefully.
+
+CRITICAL FIRST INSTRUCTION:
+Check whether the image actually contains a plant leaf, crop, fruit, seedling, or agricultural plant specimen.
+IF THE IMAGE IS NOT A PLANT, LEAF, OR CROP (for example: laptop/computer screens, IDEs, code, text, human faces/people, buildings, animals, furniture, electronics, vehicles, non-agricultural scenes):
+You MUST return ONLY JSON with this exact structure:
+{
+  "name": "No Leaf / Plant Detected",
+  "confidence": 0,
+  "severity": "None",
+  "symptoms": "The uploaded image does not appear to contain a plant, leaf, or crop photo. It looks like an object, screen, or non-agricultural image.",
+  "treatment": "Please upload or capture a clear photo of an affected crop leaf.",
+  "prevent": "Ensure your camera is focused directly on the plant leaf in good lighting."
+}
+
+IF THE IMAGE IS A PLANT/LEAF/CROP:
+1. If the plant/leaf is healthy, return:
+{
+  "name": "Healthy Plant Leaf",
+  "confidence": 95,
+  "severity": "None",
+  "symptoms": "The leaf appears healthy with normal green color and no signs of lesions, spots, or pests.",
+  "treatment": "No treatment required. Continue regular crop care and irrigation.",
+  "prevent": "Maintain balanced soil nutrition and good field drainage."
+}
+2. If diseased or damaged, identify the specific disease or pest (e.g., Tomato Early Blight, Rice Blast, Cotton Leaf Curl, Black Spot, Powdery Mildew, Pest Infestation), confidence (60-99%), severity ("Mild", "Moderate", "Severe"), detailed symptoms, specific organic and chemical treatment with dosages, and prevention tips.
+
+Crop hint from user: ${data.crop || "Not specified"}
+Language: ${data.language || "English"}
+
+Return ONLY valid JSON matching the exact schema above without markdown syntax:`;
+
+  const payload = {
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              mimeType,
+              data: base64Data,
+            },
+          },
+        ],
+      },
+    ],
+    generationConfig: {
+      temperature: 0.2,
+      responseMimeType: "application/json",
+      maxOutputTokens: 2048,
+    },
+  };
+
+  const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) continue;
+
+      const resData = await response.json();
+      const rawText = resData?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      const cleanedText = rawText.replace(/```json\s*/g, "").replace(/```/g, "").trim();
+
+      if (cleanedText) {
+        const parsed = JSON.parse(cleanedText);
+        if (parsed && parsed.name && typeof parsed.confidence === "number") {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn("Gemini disease detection error:", e);
+    }
+  }
+
+  return null;
+}
+

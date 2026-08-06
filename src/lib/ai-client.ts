@@ -1,5 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
-import { askGemini } from "./gemini";
+import { askGemini, detectDiseaseGemini } from "./gemini";
 import {
   askAssistant as serverAsk,
   recommendCrops as serverRecommend,
@@ -170,18 +170,31 @@ export function useDetectDisease() {
   const serverFn = useServerFn(serverDetect);
 
   return async (req: { data: any }) => {
+    // 1. Try Gemini API directly on client if valid key is available
+    const geminiKey =
+      (typeof import.meta !== "undefined" && import.meta.env?.VITE_GEMINI_API_KEY) ||
+      process.env.VITE_GEMINI_API_KEY;
+
+    if (geminiKey) {
+      try {
+        const res = await detectDiseaseGemini(req.data);
+        if (res) return res;
+      } catch (err) {
+        console.warn("Client Gemini disease detection failed, trying serverFn:", err);
+      }
+    }
+
     try {
       return await serverFn(req);
     } catch (err) {
       console.warn("Disease detection call error, serving fallback diagnosis:", err);
-      const cropName = req.data?.crop || "Crop";
       return {
-        name: `${cropName} Leaf Spot`,
-        confidence: 88,
-        severity: "Moderate",
-        symptoms: "Minor necrotic spots and yellowing observed on leaf surface.",
-        treatment: "Spray Copper Oxychloride (2.5 g/L) or organic Neem oil spray (5 ml/L).",
-        prevent: "Ensure proper field drainage and crop spacing to prevent moisture buildup.",
+        name: "AI Analysis Unavailable / Non-Leaf Image",
+        confidence: 0,
+        severity: "None",
+        symptoms: "Unable to detect or verify leaf health. Please upload a clear photo of an affected plant leaf.",
+        treatment: "Please upload or capture a clear photo of a crop leaf.",
+        prevent: "Ensure your camera is focused directly on the crop leaf in good lighting.",
       };
     }
   };

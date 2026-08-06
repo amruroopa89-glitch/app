@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout, PageHeader } from "@/components/AppLayout";
 import { useRef, useState } from "react";
 import { useDetectDisease } from "@/lib/ai-client";
-import { Camera, Upload, CheckCircle2, AlertTriangle, Loader2, X } from "lucide-react";
+import { Camera, Upload, CheckCircle2, AlertTriangle, AlertCircle, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/disease")({
@@ -152,33 +152,45 @@ function DiseasePage() {
             className="flex items-center gap-3 p-4"
             style={{
               background:
-                result.severity === "None" ? "var(--gradient-primary)" : "var(--gradient-sunset)",
+                result.confidence === 0 || result.name.toLowerCase().includes("no leaf")
+                  ? "linear-gradient(135deg, #64748b 0%, #475569 100%)"
+                  : result.severity === "None"
+                    ? "var(--gradient-primary)"
+                    : "var(--gradient-sunset)",
             }}
           >
-            <AlertTriangle className="h-8 w-8 text-white" />
+            {result.confidence === 0 || result.name.toLowerCase().includes("no leaf") ? (
+              <AlertCircle className="h-8 w-8 text-white" />
+            ) : result.severity === "None" ? (
+              <CheckCircle2 className="h-8 w-8 text-white" />
+            ) : (
+              <AlertTriangle className="h-8 w-8 text-white" />
+            )}
             <div className="text-white">
               <h3 className="text-lg font-bold">{result.name}</h3>
               <p className="text-xs opacity-90">
-                Severity: {result.severity} · {Math.round(result.confidence)}% confidence
+                {result.confidence > 0
+                  ? `Severity: ${result.severity} · ${Math.round(result.confidence)}% confidence`
+                  : "No Crop Leaf Identified"}
               </p>
             </div>
           </div>
           <div className="space-y-4 p-4">
             <div>
               <h4 className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                <CheckCircle2 className="h-4 w-4 text-primary" /> Symptoms
+                <CheckCircle2 className="h-4 w-4 text-primary" /> Symptoms / Analysis
               </h4>
               <p className="text-sm text-muted-foreground">{result.symptoms}</p>
             </div>
             <div>
               <h4 className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                <CheckCircle2 className="h-4 w-4 text-primary" /> Treatment
+                <CheckCircle2 className="h-4 w-4 text-primary" /> Treatment / Action
               </h4>
               <p className="text-sm text-muted-foreground">{result.treatment}</p>
             </div>
             <div>
               <h4 className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                <CheckCircle2 className="h-4 w-4 text-primary" /> Prevention
+                <CheckCircle2 className="h-4 w-4 text-primary" /> Prevention / Recommendation
               </h4>
               <p className="text-sm text-muted-foreground">{result.prevent}</p>
             </div>
@@ -186,7 +198,7 @@ function DiseasePage() {
               onClick={reset}
               className="w-full rounded-xl border border-border bg-card py-3 text-sm font-semibold text-foreground"
             >
-              Scan another leaf
+              Scan another photo
             </button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { askGemini, recommendCropsGemini } from "./gemini";
+import { askGemini, recommendCropsGemini, detectDiseaseGemini } from "./gemini";
 
 const isOpenRouter = !!process.env.OPENROUTER_API_KEY;
 
@@ -1005,7 +1005,35 @@ export const detectDisease = createServerFn({ method: "POST" })
       };
     }
 
-    const sys = `You are a plant pathologist. Look at the crop leaf image and identify any disease, pest damage, or nutrient deficiency. If the leaf looks healthy, say so. Always respond ONLY via the provided function call. Respond in ${data.language ?? "English"}.`;
+    const hasGeminiKey =
+      !!process.env.GEMINI_API_KEY ||
+      !!process.env.VITE_GEMINI_API_KEY;
+
+    if (hasGeminiKey) {
+      try {
+        const geminiRes = await detectDiseaseGemini(data);
+        if (geminiRes) return geminiRes;
+      } catch (geminiErr) {
+        console.warn("Gemini disease detection failed, falling back to gateway:", geminiErr);
+      }
+    }
+
+    const sys = `You are a plant pathologist and computer vision expert. Look at the image carefully.
+CRITICAL FIRST CHECK: Determine if the image actually contains a plant leaf, crop, fruit, or agricultural plant specimen.
+If the image is NOT a plant, leaf, or crop (e.g. computer screen, text, code, person, building, animal, furniture, vehicle):
+Submit diagnosis with:
+- name: "No Leaf / Plant Detected"
+- confidence: 0
+- severity: "None"
+- symptoms: "The uploaded image does not appear to contain a plant or crop leaf. It looks like an object, screen, or non-agricultural photo."
+- treatment: "Please upload or capture a clear photo of an affected plant leaf or crop."
+- prevent: "Ensure your camera is focused directly on the crop leaf in good lighting."
+
+If it IS a leaf/plant:
+- If healthy: name="Healthy Plant Leaf", confidence=95, severity="None", symptoms="Leaf appears healthy with no visible spots or lesions.", treatment="No treatment needed.", prevent="Maintain proper watering and field drainage."
+- If diseased: Identify disease/pest name, confidence (60-99), severity ("Mild", "Moderate", "Severe"), detailed symptoms, specific organic and chemical treatment with dosages, and prevention.
+Respond in ${data.language ?? "English"}.`;
+
     try {
       const json = await callAI({
         model: "google/gemini-3-flash-preview",
@@ -1028,7 +1056,7 @@ export const detectDisease = createServerFn({ method: "POST" })
               parameters: {
                 type: "object",
                 properties: {
-                  name: { type: "string", description: "Disease / issue name, or 'Healthy leaf'" },
+                  name: { type: "string", description: "Disease name, 'Healthy Plant Leaf', or 'No Leaf / Plant Detected'" },
                   confidence: { type: "number", description: "0-100" },
                   severity: { type: "string", enum: ["None", "Mild", "Moderate", "Severe"] },
                   symptoms: { type: "string" },
@@ -1058,17 +1086,15 @@ export const detectDisease = createServerFn({ method: "POST" })
         };
       }
     } catch (err) {
-      console.warn("Disease detection call failed, serving fallback diagnosis:", err);
+      console.warn("Disease detection call failed, serving fallback response:", err);
     }
 
-    const cropName = data.crop || "Crop";
     return {
-      name: `${cropName} Leaf Spot`,
-      confidence: 88,
-      severity: "Moderate",
-      symptoms: "Minor necrotic lesions and fungal spotting observed on leaf surface.",
-      treatment: "Spray Copper Oxychloride (2.5 g/L) or organic Neem oil formulation (5 ml/L).",
-      prevent:
-        "Maintain proper field drainage and avoid overhead irrigation to minimize leaf wetness.",
+      name: "AI Analysis Unavailable / Non-Leaf Image",
+      confidence: 0,
+      severity: "None",
+      symptoms: "Unable to detect or verify leaf health. Please upload a clear photo of an affected plant leaf.",
+      treatment: "Please re-upload a clear image of a crop leaf with active internet connection.",
+      prevent: "Hold camera steady and ensure good lighting on the leaf surface.",
     };
   });

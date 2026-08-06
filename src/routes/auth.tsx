@@ -37,6 +37,41 @@ function AuthPage() {
     setMode(search.mode);
   }, [search.mode]);
 
+  // Handle OAuth callback
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      
+      if (accessToken) {
+        console.log('[Google OAuth] Callback detected with access token');
+        try {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          });
+          
+          if (error) {
+            console.error('[Google OAuth] Session error:', error);
+            toast.error('Failed to complete Google sign-in: ' + error.message);
+          } else if (data?.session) {
+            console.log('[Google OAuth] Session established successfully');
+            toast.success("Welcome! Signed in with Google 🎉");
+            // Clear the hash from URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            navigate({ to: "/home" });
+          }
+        } catch (err) {
+          console.error('[Google OAuth] Callback error:', err);
+          toast.error('Failed to complete sign-in');
+        }
+      }
+    };
+
+    handleOAuthCallback();
+  }, [navigate]);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -79,37 +114,68 @@ function AuthPage() {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      const redirectUrl = window.location.origin + "/home";
+      const redirectUrl = `${window.location.origin}/auth`;
+      
+      console.log('[Google OAuth] Initiating sign in with redirect:', redirectUrl);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[Google OAuth] Error:', error);
+        throw error;
+      }
+
+      console.log('[Google OAuth] Response data:', data);
 
       if (data?.url) {
-        try {
-          const { Browser } = await import("@capacitor/browser");
-          await Browser.open({ url: data.url });
-        } catch {
+        // For mobile (Capacitor)
+        if (window.Capacitor?.isNativePlatform()) {
+          try {
+            const { Browser } = await import("@capacitor/browser");
+            await Browser.open({ 
+              url: data.url,
+              windowName: '_self',
+            });
+          } catch (browserErr) {
+            console.error('[Google OAuth] Capacitor Browser error:', browserErr);
+            window.location.href = data.url;
+          }
+        } else {
+          // For web browser
           window.location.href = data.url;
         }
       } else {
-        toast.success("Welcome back!");
-        navigate({ to: "/home" });
+        console.log('[Google OAuth] No URL returned, checking session...');
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session) {
+          toast.success("Welcome back!");
+          navigate({ to: "/home" });
+        } else {
+          throw new Error("No OAuth URL returned and no active session");
+        }
       }
     } catch (err: any) {
-      console.error("Google sign-in error:", err);
+      console.error("[Google OAuth] Full error:", err);
       const msg = err?.message || "Google Sign-In failed";
+      
       if (
         msg.toLowerCase().includes("unsupported") ||
         msg.toLowerCase().includes("not enabled") ||
-        msg.toLowerCase().includes("provider")
+        msg.toLowerCase().includes("provider") ||
+        msg.toLowerCase().includes("not found")
       ) {
         toast.error(
-          "Google Sign-In requires Google OAuth credentials to be configured in your Supabase Auth settings. Please sign in with Email or Mobile.",
+          "Google Sign-In is not configured. Please contact support or sign in with Email/Password.",
+          { duration: 5000 }
         );
       } else {
         toast.error(msg);
