@@ -1,0 +1,26 @@
+name: Web CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  web-tests:
+    name: 🌐 Web Tests & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install exceljs
+      - run: npm run build
+      - run: mkdir -p reports
+      - run: node selenium-tests/tests/generate_web_suite.js reports/selenium-web-report.xlsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-ci-report
+          path: reports/selenium-web-report.xlsx

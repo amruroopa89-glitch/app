@@ -1,0 +1,25 @@
+name: Appium Mobile CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  mobile-tests:
+    name: 📱 Android Appium Mobile Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install openpyxl pandas
+      - run: mkdir -p appium-tests/reports
+      - run: python appium-tests/tests/generate_mobile_suite.py appium-tests/reports/appium-android-report.xlsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-ci-report
+          path: appium-tests/reports/appium-android-report.xlsx

@@ -1,0 +1,23 @@
+name: Selenium Login & E2E Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  selenium-login-tests:
+    name: 🔑 Selenium Login & Accessibility Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install exceljs
+      - run: mkdir -p reports
+      - run: node selenium-tests/tests/generate_web_suite.js reports/selenium-login-report.xlsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: selenium-login-report
+          path: reports/selenium-login-report.xlsx
