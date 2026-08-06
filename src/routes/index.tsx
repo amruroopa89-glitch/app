@@ -18,6 +18,7 @@ function Welcome() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     // CRITICAL: Do NOT redirect OAuth tokens
     // Only redirect password recovery tokens that explicitly have type=recovery
     const hash = window.location.hash;

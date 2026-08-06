@@ -26,9 +26,7 @@ function ResetPasswordPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    let mounted = true;
-
-  useEffect(() => {
+    if (typeof window === "undefined") return;
     let mounted = true;
 
     // Check URL hash AND query parameters for recovery token
