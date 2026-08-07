@@ -2,23 +2,33 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { askGemini, recommendCropsGemini, detectDiseaseGemini } from "./gemini";
 
-const isOpenRouter = !!process.env.OPENROUTER_API_KEY;
-
-const GATEWAY = isOpenRouter
-  ? "https://openrouter.ai/api/v1/chat/completions"
-  : "https://ai.gateway.lovable.dev/v1/chat/completions";
-
 async function callAI(body: any) {
-  const apiKey = process.env.OPENROUTER_API_KEY || process.env.LOVABLE_API_KEY;
+  const apiKey =
+    process.env.OPENROUTER_API_KEY ||
+    process.env.VITE_OPENROUTER_API_KEY ||
+    process.env.LOVABLE_API_KEY;
+
   if (!apiKey) {
     throw new Error(
-      "AI service is not configured. Please set LOVABLE_API_KEY or OPENROUTER_API_KEY.",
+      "AI service is not configured. Please set OPENROUTER_API_KEY or LOVABLE_API_KEY.",
     );
   }
 
+  const isOpenRouter =
+    apiKey.startsWith("sk-or-") ||
+    !!process.env.OPENROUTER_API_KEY ||
+    !!process.env.VITE_OPENROUTER_API_KEY;
+
+  const gateway = isOpenRouter
+    ? "https://openrouter.ai/api/v1/chat/completions"
+    : "https://ai.gateway.lovable.dev/v1/chat/completions";
+
   let requestBody = { max_tokens: 4096, ...body };
   if (isOpenRouter) {
-    requestBody.model = process.env.OPENROUTER_MODEL || "openrouter/auto";
+    requestBody.model =
+      process.env.OPENROUTER_MODEL ||
+      process.env.VITE_OPENROUTER_MODEL ||
+      "openrouter/auto";
   }
 
   const headers: Record<string, string> = {
@@ -31,7 +41,7 @@ async function callAI(body: any) {
     headers["X-Title"] = "Green Harvest Buddy";
   }
 
-  const res = await fetch(GATEWAY, {
+  const res = await fetch(gateway, {
     method: "POST",
     headers,
     body: JSON.stringify(requestBody),
@@ -909,12 +919,43 @@ ${profileLines}`
 
       let reply = "";
 
-      if (q.includes("groundnut") || q.includes("peanut")) {
+      if (q.includes("watermelon") || q.includes("water melon") || q.includes("melon")) {
+        if (q.includes("soil") || q.includes("land") || q.includes("field")) {
+          reply =
+            "Watermelon grows best in well-drained sandy loam or silt loam soil rich in organic matter with a pH of 6.0-7.5. Sandy loam soil warms up quickly in early spring, provides excellent aeration, and prevents waterlogging, which is critical for deep taproot growth and developing high sugar content in watermelons.";
+        } else if (q.includes("fertilizer") || q.includes("npk") || q.includes("manure")) {
+          reply =
+            "For watermelon cultivation, apply NPK 100:50:50 kg/ha. Apply full Phosphorus and 1/3 Nitrogen at basal sowing. Apply remaining Nitrogen and Potassium in two split doses during vine development and early fruit set to maximize fruit weight and sweetness.";
+        } else {
+          reply =
+            "Watermelon requires warm climate, full sunlight, and well-drained sandy loam soil with pH 6.0-7.5. Plant seeds after soil temperature reaches 20°C. Irrigate regularly during vine growth, but reduce watering 7-10 days before harvest to enhance sugar concentration.";
+        }
+      } else if (q.includes("papaya")) {
+        reply =
+          "Papaya thrives in deep, rich sandy loam soil with pH 6.5-7.0 and excellent drainage. Stagnant water causes collar rot within 48 hours. Apply NPK 250:250:500 g/plant/year divided into 6 bimonthly doses starting from 2 months after planting.";
+      } else if (q.includes("mango")) {
+        reply =
+          "Mango grows best in deep, well-drained alluvial or red loamy soil with pH 5.5-7.5. Apply 500g N, 250g P2O5, and 500g K2O per mature tree annually after harvesting in July-August.";
+      } else if (q.includes("onion") || q.includes("garlic")) {
+        reply =
+          "Onion and garlic prefer friable, well-drained sandy loam soil rich in organic matter with pH 6.0-7.0. Apply NPK 100:50:50 kg/ha plus 20 kg/acre Sulphur. Avoid heavy clay soils which restrict bulb expansion.";
+      } else if (q.includes("cucumber") || q.includes("gourd")) {
+        reply =
+          "Cucurbits like cucumber and gourds grow best in fertile, well-drained sandy loam soil with pH 6.0-7.0. Apply FYM 10 t/acre plus NPK 60:30:30 kg/ha. Maintain consistent moisture during flowering and fruit development.";
+      } else if (q.includes("groundnut") || q.includes("peanut")) {
         reply =
           "For groundnut cultivation, prepare well-drained sandy loam soil with a pH of 6.0-6.8. Apply NPK 20:40:20 kg/ha as a basal dose. Crucially, apply Gypsum at 200 kg/acre during the pegging stage (40-45 days after sowing) to promote pod filling and kernel weight.";
       } else if (q.includes("banana")) {
-        reply =
-          "Banana requires deep, fertile loamy soil with rich potassium levels and good drainage. Apply 200g Nitrogen, 50g Phosphorus, and 300g Potassium per plant in 4-5 split doses throughout growth, especially during vegetative development and bunch emergence.";
+        if (q.includes("fertilizer") || q.includes("npk") || q.includes("dose")) {
+          reply =
+            "Banana fertilizer schedule: Apply 200g Nitrogen, 50g Phosphorus, and 300g Potassium per plant in 4-5 split doses throughout growth (at 30, 60, 90, 120, and 150 days after planting), especially during vegetative development and bunch emergence.";
+        } else if (q.includes("soil")) {
+          reply =
+            "Banana requires deep, fertile loamy soil with high organic matter, rich potassium levels, and excellent drainage with pH 6.0-7.5. Avoid waterlogged or highly saline soils.";
+        } else {
+          reply =
+            "Banana requires deep, fertile loamy soil with rich potassium levels and good drainage. Apply 200g Nitrogen, 50g Phosphorus, and 300g Potassium per plant in 4-5 split doses throughout growth, especially during vegetative development and bunch emergence.";
+        }
       } else if (q.includes("cotton")) {
         reply =
           "Cotton grows best in deep black clay (regur) or alluvial soil with pH 6.0-8.0. Apply NPK 80:40:40 kg/ha in 3 split doses (sowing, square formation, flowering). Monitor weekly for pink bollworm and sucking pests like whiteflies and aphids.";
@@ -958,11 +999,13 @@ ${profileLines}`
         q.includes("fertilizer") ||
         q.includes("npk") ||
         q.includes("compost") ||
-        q.includes("manure") ||
-        q.includes("soil")
+        q.includes("manure")
       ) {
         reply =
-          "Soil health tips: Perform a soil test every 2 years to determine pH and macro/micronutrient deficits. Apply 5-10 tonnes/acre of farmyard manure (FYM) or vermicompost. Always split Nitrogen application to avoid leaching loss.";
+          "Fertilizer & Nutrition Tips: Perform a soil test every 2 years to determine pH and macro/micronutrient deficits. Apply 5-10 tonnes/acre of farmyard manure (FYM) or vermicompost. Always split Nitrogen and Potassium applications across vegetative and reproductive growth phases to prevent leaching loss.";
+      } else if (q.includes("soil") || q.includes("land") || q.includes("ph")) {
+        reply =
+          "Soil Health Guidance: Most agricultural crops thrive in well-drained sandy loam or silt loam soil with a pH between 6.0 and 7.5. Enhance soil fertility by incorporating 5-10 tonnes/acre of FYM, practicing crop rotation with legumes, and maintaining proper field drainage.";
       } else if (q.includes("irrigation") || q.includes("water") || q.includes("drip")) {
         reply =
           "Irrigation guidance: Adopt drip or sprinkler irrigation to improve water use efficiency by up to 50%. Irrigate during critical growth phases (sowing, flowering, pod/grain filling) to maximize harvest yield.";
