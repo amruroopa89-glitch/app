@@ -68,44 +68,49 @@ function ResetPasswordPage() {
         hasQueryCode: !!code,
       });
 
-      // CRITICAL CHECK: Reject if this looks like OAuth
-      // OAuth tokens will have access_token but NO type=recovery
-      // OR they might have a code parameter
-      if (accessToken && type !== 'recovery') {
-        console.error("[Reset Password] ❌ This looks like an OAuth token, not password recovery!");
-        console.error("[Reset Password] Redirecting to /auth for proper OAuth handling");
-        toast.error("This link is not for password reset. Redirecting to sign in...");
-        navigate({ to: "/auth" });
+      // 1. Check for PKCE flow authorization code
+      if (code) {
+        console.log("[Reset Password] PKCE code detected, exchanging code for session...");
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.error("[Reset Password] Code exchange failed:", error);
+            if (mounted) {
+              toast.error(error.message || "Invalid or expired reset link. Please request a new one.");
+              setTimeout(() => {
+                navigate({ to: "/auth", search: { mode: "forgot" } });
+              }, 2000);
+            }
+            return;
+          }
+          if (data?.session) {
+            console.log("[Reset Password] ✅ PKCE code exchanged successfully");
+            if (mounted) setIsValidToken(true);
+            return;
+          }
+        } catch (err) {
+          console.error("[Reset Password] Error during code exchange:", err);
+        }
+      }
+
+      // 2. Check for implicit flow recovery token
+      if (accessToken && (type === 'recovery' || !type)) {
+        console.log("[Reset Password] ✅ Recovery hash detected");
+        if (mounted) setIsValidToken(true);
         return;
       }
 
-      // If there's a code parameter but no type, it's likely OAuth
-      if (code && !type) {
-        console.error("[Reset Password] ❌ Query code detected without type=recovery");
-        console.error("[Reset Password] This is likely an OAuth callback, redirecting to /auth");
-        toast.error("Invalid password reset link. Please sign in normally.");
-        navigate({ to: "/auth" });
-        return;
-      }
-
-      // Only accept if type=recovery is explicitly present
-      if (type === 'recovery' && accessToken) {
-        console.log("[Reset Password] ✅ Valid recovery hash detected");
-        setIsValidToken(true);
-        return;
-      }
-
-      // Check current session (user might be already authenticated)
+      // 3. Check current session (user might be already authenticated via recovery link)
       const { data: { session } } = await supabase.auth.getSession();
       console.log("[Reset Password] Current session:", session ? "exists" : "none");
       
       if (session) {
         console.log("[Reset Password] Active session found, allowing password change");
-        setIsValidToken(true);
+        if (mounted) setIsValidToken(true);
         return;
       }
 
-      // Wait a bit for auth state to initialize
+      // 4. Wait briefly for auth state listener in case auth initializes asynchronously
       setTimeout(async () => {
         if (!mounted) return;
         const { data: { session: s } } = await supabase.auth.getSession();
@@ -118,14 +123,14 @@ function ResetPasswordPage() {
             navigate({ to: "/auth", search: { mode: "forgot" } });
           }, 2000);
         }
-      }, 1000);
+      }, 1200);
     };
 
     // Listen to Supabase Auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session ? "session exists" : "no session");
+      console.log("[Reset Password] Auth state changed:", event, session ? "session exists" : "no session");
       if (!mounted) return;
       if (event === "PASSWORD_RECOVERY" || session) {
         setIsValidToken(true);

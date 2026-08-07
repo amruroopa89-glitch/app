@@ -230,6 +230,15 @@ function createMockSupabaseClient() {
       setTimeout(() => triggerAuthChange("SIGNED_OUT", null), 0);
       return { error: null };
     },
+    async exchangeCodeForSession(code: string) {
+      const session = getMockSession() || {
+        access_token: "mock-code-token-" + Math.random().toString(36).substr(2, 9),
+        user: { id: "mock-user-1", email: "user@example.com", user_metadata: { full_name: "Farmer" } },
+      };
+      saveMockSession(session);
+      setTimeout(() => triggerAuthChange("PASSWORD_RECOVERY", session), 0);
+      return { data: { session, user: session.user }, error: null };
+    },
     onAuthStateChange(callback: any) {
       authListeners.add(callback);
       const session = getMockSession();
