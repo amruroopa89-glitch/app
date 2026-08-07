@@ -70,17 +70,20 @@ export async function askGemini({
 
   let fullSystemInstruction = GREEN_HARVEST_SYSTEM_PROMPT;
   if (language && language !== "English") {
-    fullSystemInstruction += `\nRespond in ${language}.`;
-  }
-  if (profileLines) {
-    fullSystemInstruction += `\n\nFarmer context:\n${profileLines}`;
+    fullSystemInstruction += `\n\nCRITICAL MANDATORY INSTRUCTION: You MUST write your entire response 100% in ${language} using native ${language} script (for example, Telugu script for Telugu, Hindi Devanagari for Hindi, Tamil script for Tamil, Kannada script for Kannada, Marathi for Marathi, Bengali for Bengali, Gujarati for Gujarati). DO NOT respond in English under any circumstances when ${language} is selected.`;
   }
 
   // Convert messages to Gemini format: 'user' or 'model'
-  const contents = messages.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
+  const contents = messages.map((m, idx) => {
+    let text = m.content;
+    if (idx === messages.length - 1 && language && language !== "English") {
+      text += `\n\n[MANDATORY: Answer this question strictly in ${language} using native ${language} script. Do NOT respond in English.]`;
+    }
+    return {
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text }],
+    };
+  });
 
   const payload = {
     systemInstruction: {
