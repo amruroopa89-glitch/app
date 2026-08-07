@@ -146,6 +146,7 @@ function AuthPage() {
                   <Field
                     key="name-input"
                     id="name-input"
+                    name="name"
                     icon={<User className="h-4 w-4" />}
                     placeholder="Full name"
                     value={name}
@@ -155,6 +156,7 @@ function AuthPage() {
                   <Field
                     key="mobile-input"
                     id="mobile-input"
+                    name="tel"
                     icon={<Phone className="h-4 w-4" />}
                     placeholder="Mobile"
                     value={mobile}
@@ -167,6 +169,7 @@ function AuthPage() {
               <Field
                 key="email-input"
                 id="email-input"
+                name="email"
                 icon={<Mail className="h-4 w-4" />}
                 type="email"
                 placeholder="Email"
@@ -180,12 +183,13 @@ function AuthPage() {
                 <Field
                   key="password-input"
                   id="password-input"
+                  name="password"
                   icon={<Lock className="h-4 w-4" />}
                   type="password"
                   placeholder="Password (min 6 chars)"
                   value={password}
                   onChange={setPassword}
-                  autoComplete="current-password"
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
                   required
                 />
               )}
@@ -193,7 +197,7 @@ function AuthPage() {
                 type="submit"
                 id="email-submit-btn"
                 disabled={loading}
-                className="w-full rounded-xl py-3 font-semibold text-primary-foreground shadow-[var(--shadow-soft)] disabled:opacity-60"
+                className="w-full rounded-xl py-3 font-semibold text-primary-foreground shadow-[var(--shadow-soft)] disabled:opacity-60 cursor-pointer"
                 style={{ background: "var(--gradient-primary)" }}
               >
                 {loading
@@ -213,7 +217,7 @@ function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setMode("forgot")}
-                  className="text-primary font-medium"
+                  className="text-primary font-medium cursor-pointer"
                 >
                   Forgot password?
                 </button>
@@ -221,7 +225,7 @@ function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setMode("signin")}
-                  className="text-primary font-medium"
+                  className="text-primary font-medium cursor-pointer"
                 >
                   Back to sign in
                 </button>
@@ -236,6 +240,7 @@ function AuthPage() {
 
 function Field({
   id,
+  name,
   icon,
   type = "text",
   placeholder,
@@ -246,6 +251,7 @@ function Field({
   autoComplete,
 }: {
   id?: string;
+  name?: string;
   icon: React.ReactNode;
   type?: string;
   placeholder: string;
@@ -263,7 +269,7 @@ function Field({
       <span className="text-gray-400 flex-shrink-0 pointer-events-none">{icon}</span>
       <input
         id={id}
-        name={id}
+        name={name || id}
         type={type}
         placeholder={placeholder}
         value={value ?? ""}
@@ -274,12 +280,14 @@ function Field({
         autoCapitalize={type === "email" || inputMode === "email" ? "none" : "words"}
         spellCheck={false}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full min-w-0 bg-transparent py-3 outline-none border-none text-base font-normal text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0"
+        onInput={(e) => onChange((e.target as HTMLInputElement).value)}
+        className="w-full min-w-0 bg-transparent py-3 outline-none border-none text-base font-normal text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0 cursor-text relative z-20"
         style={{
           fontSize: "16px",
           color: "#111827",
           caretColor: "#166534",
           opacity: 1,
+          pointerEvents: "auto",
         }}
       />
     </div>
