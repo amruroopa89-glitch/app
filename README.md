@@ -1,5 +1,6 @@
 # 🌾 Green Harvest Buddy
 
+> 🌍 **Render Live Server Web Application**: [https://green-harvest-buddy.onrender.com](https://green-harvest-buddy.onrender.com)  
 > 🚀 **Live GitHub Pages Web Application**: [https://amruroopa89-glitch.github.io/app/](https://amruroopa89-glitch.github.io/app/)  
 > 📊 **GitHub Actions CI/CD Dashboard**: [https://github.com/amruroopa89-glitch/app/actions](https://github.com/amruroopa89-glitch/app/actions)  
 > ⚙️ **GitHub Pages Deployment Settings**: [https://github.com/amruroopa89-glitch/app/settings/pages](https://github.com/amruroopa89-glitch/app/settings/pages)  
@@ -8,13 +9,14 @@ Welcome to the **Green Harvest Buddy** repository! This is a modern, responsive 
 
 ---
 
-## 🌐 Live GitHub Pages Deployment
+## 🌐 Live Deployments
 
-The application is automatically built and deployed to GitHub Pages.
+The application is deployed across multiple environments:
 
-- **Deployment URL**: [https://amruroopa89-glitch.github.io/app/](https://amruroopa89-glitch.github.io/app/)
-- **Repository Actions**: [https://github.com/amruroopa89-glitch/app/actions](https://github.com/amruroopa89-glitch/app/actions)
-- **Deployment Settings**: [https://github.com/amruroopa89-glitch/app/settings/pages](https://github.com/amruroopa89-glitch/app/settings/pages)
+- 🌍 **Render Live Application**: [https://green-harvest-buddy.onrender.com](https://green-harvest-buddy.onrender.com)
+- 🚀 **GitHub Pages Static App**: [https://amruroopa89-glitch.github.io/app/](https://amruroopa89-glitch.github.io/app/)
+- 📊 **Repository Actions**: [https://github.com/amruroopa89-glitch/app/actions](https://github.com/amruroopa89-glitch/app/actions)
+- ⚙️ **Deployment Settings**: [https://github.com/amruroopa89-glitch/app/settings/pages](https://github.com/amruroopa89-glitch/app/settings/pages)
 
 ---
 
