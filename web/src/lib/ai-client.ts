@@ -1,11 +1,4 @@
-import { useServerFn } from "@tanstack/react-start";
-import { askGemini, detectDiseaseGemini } from "./gemini";
-import {
-  askAssistant as serverAsk,
-  recommendCrops as serverRecommend,
-  detectDisease as serverDetect,
-  generateAgronomicRecommendations,
-} from "./ai.functions";
+import { generateAgronomicRecommendations } from "./ai.functions";
 
 async function fetchOpenRouter(
   messages: any[],
@@ -75,29 +68,20 @@ function parseJSONResponse(json: any) {
 }
 
 export function useAskAssistant() {
-  const serverFn = useServerFn(serverAsk);
-
   return async (req: { data: any }) => {
-    // 1. Try Gemini API directly on client if valid
-    const geminiKey =
-      (typeof import.meta !== "undefined" && import.meta.env?.VITE_GEMINI_API_KEY) ||
-      process.env.VITE_GEMINI_API_KEY;
-
-    if (geminiKey) {
-      try {
-        return await askGemini({
-          messages: req.data.messages,
-          language: req.data.language,
-          profile: req.data.profile,
-        });
-      } catch (err) {
-        console.warn("Client Gemini API call failed, trying serverFn:", err);
-      }
-    }
-
-    // 2. Try Server Function
+    // Directly call the REST API route to avoid HMR ID mismatch
     try {
-      return await serverFn(req);
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(req.data),
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      return await res.json();
     } catch (serverErr) {
       console.warn("Server assistant call failed, serving smart dynamic answer:", serverErr);
 
@@ -192,6 +176,17 @@ export function useAskAssistant() {
           reply =
             "Wheat grows best in well-drained loamy soil during the Rabi season. Apply NPK 120:50:50 kg/ha. Give first irrigation 21 days after sowing.";
         }
+      } else if (q.includes("potato")) {
+        if (reqLang === "Telugu") {
+          reply =
+            "బంగాళాదుంప సాగుకు pH 5.0-6.5 మరియు సేంద్రీయ పదార్థాలు సమృద్ధిగా ఉన్న ఇసుక లోమ్ నేలలు అనుకూలం. అక్టోబర్-నవంబర్ నాటడానికి అనుకూల సమయం. కోతకు 10 రోజుల ముందు నీటి సరఫరా నిలిపివేయండి.";
+        } else if (reqLang === "Hindi") {
+          reply =
+            "आलू की खेती के लिए जल निकास युक्त बलुई दोमट मिट्टी (pH 5.0-6.5) सर्वोत्तम है। बुवाई के 30-35 दिन बाद मिट्टी अवश्य चढ़ाएं। खुदाई से 10 दिन पहले सिंचाई बंद कर दें।";
+        } else {
+          reply =
+            "Potato grows best in well-drained sandy loam soil with pH 5.0-6.5. Sowing should be done in October-November. Perform earthing up at 30-35 days, and stop watering 10 days before harvesting.";
+        }
       } else {
         if (reqLang === "Telugu") {
           reply =
@@ -226,11 +221,19 @@ export function useAskAssistant() {
 }
 
 export function useRecommendCrops() {
-  const serverFn = useServerFn(serverRecommend);
-
   return async (req: { data: any }) => {
     try {
-      return await serverFn(req);
+      const res = await fetch("/api/recommend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(req.data),
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      return await res.json();
     } catch (err) {
       console.warn("Recommendation call error, generating dynamic fallback:", err);
       return generateAgronomicRecommendations(req.data);
@@ -239,25 +242,20 @@ export function useRecommendCrops() {
 }
 
 export function useDetectDisease() {
-  const serverFn = useServerFn(serverDetect);
-
   return async (req: { data: any }) => {
-    // 1. Try Gemini API directly on client if valid key is available
-    const geminiKey =
-      (typeof import.meta !== "undefined" && import.meta.env?.VITE_GEMINI_API_KEY) ||
-      process.env.VITE_GEMINI_API_KEY;
-
-    if (geminiKey) {
-      try {
-        const res = await detectDiseaseGemini(req.data);
-        if (res) return res;
-      } catch (err) {
-        console.warn("Client Gemini disease detection failed, trying serverFn:", err);
-      }
-    }
-
+    // Directly call REST API to avoid HMR ID mismatch
     try {
-      return await serverFn(req);
+      const res = await fetch("/api/disease", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(req.data),
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      return await res.json();
     } catch (err) {
       console.warn("Disease detection call error, serving fallback diagnosis:", err);
       return {

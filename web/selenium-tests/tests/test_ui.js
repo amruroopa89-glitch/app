@@ -398,7 +398,7 @@ export async function runUITests(ctx) {
   await step(
     "TC-UI-031",
     "UI/UX",
-    "Get AI Recommendations button styling",
+    "Get Recommendations button styling",
     "Locate submit button on /recommend",
     "Button with gradient style",
     async () => {

@@ -44,7 +44,7 @@ def run_ui_tests(ctx):
     ctx.step("TC-MOB-UI-029","Mobile UI","Recommend page H1 renders on mobile","Navigate /recommend","H1 visible",lambda:(driver.get(TARGET_URL+"/recommend"),sleep(1.2),f"h1: {wait_for_element(driver,'h1').text}")[2])
     ctx.step("TC-MOB-UI-030","Mobile UI","Recommend form card with rounded border","Inspect form","Form card rendered",lambda:f"form br: {wait_for_element(driver,'form').value_of_css_property('border-radius')}")
     ctx.step("TC-MOB-UI-031","Mobile UI","Soil Type dropdown rendered on mobile","Count selects","Select dropdown present",lambda:f"selects: {len(driver.find_elements(By.CSS_SELECTOR,'select'))}")
-    ctx.step("TC-MOB-UI-032","Mobile UI","Get AI Recommendations button visible","Locate submit","Button with gradient",lambda:"btn: {}".format(wait_for_element(driver,'button[type="submit"]').text))
+    ctx.step("TC-MOB-UI-032","Mobile UI","Get Recommendations button visible","Locate submit","Button with gradient",lambda:"btn: {}".format(wait_for_element(driver,'button[type="submit"]').text))
     ctx.step("TC-MOB-UI-033","Mobile UI","NPK input fields render in row on mobile","Count number inputs","≥ 3 number inputs visible",lambda:f"num inputs: {len(driver.find_elements(By.CSS_SELECTOR,'input[type=number]'))}")
     ctx.step("TC-MOB-UI-034","Mobile UI","Region text input visible","Locate text input","Region field present",lambda:f"text inputs: {len(driver.find_elements(By.CSS_SELECTOR,'input[type=text]'))}")
     ctx.step("TC-MOB-UI-035","Mobile UI","Chat page H1 renders on mobile","Navigate /chat","H1 visible",lambda:(driver.get(TARGET_URL+"/chat"),sleep(1.2),f"h1: {wait_for_element(driver,'h1').text}")[2])

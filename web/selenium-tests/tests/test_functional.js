@@ -312,7 +312,7 @@ export async function runFunctionalTests(ctx) {
     "TC-FUNC-020",
     "Recommend",
     "Submit AI recommendation request",
-    "Click Get AI Recommendations button",
+    "Click Get Recommendations button",
     "Recommendations returned",
     async () => {
       await click(driver, "button[type='submit']");

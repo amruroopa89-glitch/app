@@ -67,7 +67,7 @@ export function ChatScreen() {
     {
       role: "assistant",
       content:
-        "Hello! 👋 I am your **Green Harvest AI Assistant**.\n\nI can help you with:\n- 🌾 **Crop recommendations**\n- 🧪 **Fertilizer suggestions**\n- 🌿 **Plant disease guidance**\n- 💧 **Irrigation advice**\n- ☀️ **Weather-based farming tips**\n\nHow can I help your farm today?",
+        "Hello! 👋 I am your **Green Harvest Assistant**.\n\nI can help you with:\n- 🌾 **Crop recommendations**\n- 🧪 **Fertilizer suggestions**\n- 🌿 **Plant disease guidance**\n- 💧 **Irrigation advice**\n- ☀️ **Weather-based farming tips**\n\nHow can I help your farm today?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -216,7 +216,7 @@ export function ChatScreen() {
               {
                 role: "assistant",
                 content:
-                  "Chat history cleared. 👋 I am Green Harvest AI Assistant. How can I help you today?",
+                  "Chat history cleared. 👋 I am Green Harvest Assistant. How can I help you today?",
               },
             ]);
           },

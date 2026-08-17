@@ -74,16 +74,37 @@ export async function askGemini({
   }
 
   // Convert messages to Gemini format: 'user' or 'model'
-  const contents = messages.map((m, idx) => {
-    let text = m.content;
-    if (idx === messages.length - 1 && language && language !== "English") {
-      text += `\n\n[MANDATORY: Answer this question strictly in ${language} using native ${language} script. Do NOT respond in English.]`;
+  // Gemini API requires that the conversation history:
+  // 1. Starts with a 'user' turn (skip any leading model/assistant turns like greeting messages).
+  // 2. Alternates strictly between 'user' and 'model'.
+  const contents: any[] = [];
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
+    const role = m.role === "assistant" ? "model" : "user";
+    
+    // Skip any leading model/assistant turns
+    if (contents.length === 0 && role === "model") {
+      continue;
     }
-    return {
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text }],
-    };
-  });
+    
+    // If consecutive turns have the same role, merge their content to preserve history
+    if (contents.length > 0 && contents[contents.length - 1].role === role) {
+      contents[contents.length - 1].parts[0].text += "\n\n" + m.content;
+    } else {
+      contents.push({
+        role,
+        parts: [{ text: m.content }],
+      });
+    }
+  }
+
+  // Inject the mandatory language instruction into the final user turn if appropriate
+  if (contents.length > 0) {
+    const lastTurn = contents[contents.length - 1];
+    if (lastTurn.role === "user" && language && language !== "English") {
+      lastTurn.parts[0].text += `\n\n[MANDATORY: Answer this question strictly in ${language} using native ${language} script. Do NOT respond in English.]`;
+    }
+  }
 
   const payload = {
     systemInstruction: {

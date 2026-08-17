@@ -9,10 +9,10 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/recommend")({
   head: () => ({
     meta: [
-      { title: "AI Crop Recommendations" },
+      { title: "Crop Recommendations" },
       {
         name: "description",
-        content: "Enter your soil values and get AI-powered crop recommendations.",
+        content: "Enter your soil values, get tailored crops",
       },
     ],
   }),
@@ -102,7 +102,7 @@ function RecommendPage() {
   return (
     <AppLayout variant="crops">
       <PageHeader
-        title="AI Crop Recommendation"
+        title="Crop Recommendation"
         subtitle="Enter your soil values, get tailored crops"
         emoji="🌾"
       />
@@ -178,7 +178,7 @@ function RecommendPage() {
           ) : (
             <Sparkles className="h-5 w-5" />
           )}
-          {loading ? "Analyzing soil..." : "Get AI Recommendations"}
+          {loading ? "Analyzing soil..." : "Get Recommendations"}
         </button>
       </form>
 

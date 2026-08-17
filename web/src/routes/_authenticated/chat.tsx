@@ -23,10 +23,10 @@ import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({
     meta: [
-      { title: "Green Harvest AI Assistant" },
+      { title: "Green Harvest Assistant" },
       {
         name: "description",
-        content: "Chat with Green Harvest AI Assistant for crop, fertilizer, disease, irrigation and weather guidance.",
+        content: "Chat with Green Harvest Assistant for crop, fertilizer, disease, irrigation and weather guidance.",
       },
     ],
   }),
@@ -80,7 +80,7 @@ function ChatPage() {
     {
       role: "assistant",
       content:
-        "Hello! 👋 I am your **Green Harvest AI Assistant**.\n\nI can help you with:\n- 🌾 **Crop recommendations**\n- 🧪 **Fertilizer suggestions**\n- 🌿 **Plant disease guidance**\n- 💧 **Irrigation advice**\n- ☀️ **Weather-based farming tips**\n\nHow can I help your farm today?",
+        "Hello! 👋 I am your **Green Harvest Assistant**.\n\nI can help you with:\n- 🌾 **Crop recommendations**\n- 🧪 **Fertilizer suggestions**\n- 🌿 **Plant disease guidance**\n- 💧 **Irrigation advice**\n- ☀️ **Weather-based farming tips**\n\nHow can I help your farm today?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -260,7 +260,7 @@ function ChatPage() {
         {
           role: "assistant",
           content:
-            "Chat history cleared. 👋 I am Green Harvest AI Assistant. How can I help you today?",
+            "Chat history cleared. 👋 I am Green Harvest Assistant. How can I help you today?",
         },
       ]);
       toast.success("Chat history cleared.");
@@ -317,7 +317,7 @@ function ChatPage() {
   return (
     <AppLayout variant="chat">
       <PageHeader
-        title="Green Harvest AI Assistant"
+        title="Green Harvest Assistant"
         subtitle="Powered by Google Gemini · Multilingual Farming Intelligence"
         emoji="🤖"
       />

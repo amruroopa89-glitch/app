@@ -17,7 +17,7 @@ export const Route = createFileRoute("/api/disease")({
       POST: async ({ request }) => {
         try {
           const body = await request.json();
-          const result = await (detectDisease as any).handler({ data: body });
+          const result = await (detectDisease as any)({ data: body });
           return Response.json(result, { headers: corsHeaders });
         } catch (err: any) {
           return Response.json({ error: err.message }, { status: 500, headers: corsHeaders });

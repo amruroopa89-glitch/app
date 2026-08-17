@@ -101,14 +101,43 @@ export function DiseaseScreen() {
 
         {/* Crop Filter */}
         <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Crop (optional)</Text>
-          <TextInput
-            style={styles.input}
-            value={crop}
-            onChangeText={setCrop}
-            placeholder="e.g. tomato, cotton, paddy"
-            placeholderTextColor="#A0AEC0"
-          />
+          <Text style={styles.label}>Select Crop to Scan</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
+            {[
+              { id: "tomato", label: "Tomato", emoji: "🍅" },
+              { id: "cotton", label: "Cotton", emoji: "🌿" },
+              { id: "paddy", label: "Paddy", emoji: "🌾" },
+              { id: "groundnut", label: "Groundnut", emoji: "🥜" },
+              { id: "wheat", label: "Wheat", emoji: "🌾" },
+              { id: "chilli", label: "Chilli", emoji: "🌶️" },
+              { id: "maize", label: "Maize", emoji: "🌽" },
+              { id: "banana", label: "Banana", emoji: "🍌" },
+              { id: "sugarcane", label: "Sugarcane", emoji: "🎋" },
+              { id: "potato", label: "Potato", emoji: "🥔" },
+              { id: "watermelon", label: "Watermelon", emoji: "🍉" },
+              { id: "mango", label: "Mango", emoji: "🥭" },
+              { id: "pomegranate", label: "Pomegranate", emoji: "🍎" },
+              { id: "apple", label: "Apple", emoji: "🍎" },
+              { id: "grape", label: "Grape", emoji: "🍇" },
+            ].map((item) => {
+              const selected = crop === item.id;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  onPress={() => setCrop(selected ? "" : item.id)}
+                  style={[
+                    styles.chip,
+                    selected ? styles.chipSelected : styles.chipUnselected,
+                  ]}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.chipText, selected ? styles.chipTextSelected : styles.chipTextUnselected]}>
+                    {item.emoji} {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         {/* Upload Container */}
@@ -156,7 +185,7 @@ export function DiseaseScreen() {
         {scanning && (
           <View style={styles.loaderCard}>
             <ActivityIndicator size="large" color="#2E7D32" />
-            <Text style={styles.loaderText}>AI is analyzing your leaf...</Text>
+            <Text style={styles.loaderText}>Analyzing leaf...</Text>
           </View>
         )}
 
@@ -234,7 +263,7 @@ export function DiseaseScreen() {
             <View style={styles.presetsGrid}>
               <TouchableOpacity
                 style={styles.presetCard}
-                onPress={() => handlePresetSelect("Tomato Leaf Spot", "Tomato", true)}
+                onPress={() => handlePresetSelect("Tomato Leaf Spot", "tomato", true)}
               >
                 <Text style={styles.presetEmoji}>🍅</Text>
                 <Text style={styles.presetLabel}>Tomato Spot</Text>
@@ -242,7 +271,7 @@ export function DiseaseScreen() {
 
               <TouchableOpacity
                 style={styles.presetCard}
-                onPress={() => handlePresetSelect("Cotton Aphids", "Cotton", true)}
+                onPress={() => handlePresetSelect("Cotton Aphids", "cotton", true)}
               >
                 <Text style={styles.presetEmoji}>🌱</Text>
                 <Text style={styles.presetLabel}>Cotton Aphids</Text>
@@ -250,10 +279,18 @@ export function DiseaseScreen() {
 
               <TouchableOpacity
                 style={styles.presetCard}
-                onPress={() => handlePresetSelect("Rice Blast", "Paddy", true)}
+                onPress={() => handlePresetSelect("Rice Blast", "paddy", true)}
               >
                 <Text style={styles.presetEmoji}>🌾</Text>
                 <Text style={styles.presetLabel}>Rice Blast</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.presetCard}
+                onPress={() => handlePresetSelect("Potato Late Blight", "potato", true)}
+              >
+                <Text style={styles.presetEmoji}>🥔</Text>
+                <Text style={styles.presetLabel}>Potato Blight</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -271,7 +308,37 @@ export function DiseaseScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create({  chipsScroll: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  chipSelected: {
+    backgroundColor: "#2E7D32",
+    borderColor: "#2E7D32",
+  },
+  chipUnselected: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#E2E8F0",
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  chipTextSelected: {
+    color: "#FFFFFF",
+  },
+  chipTextUnselected: {
+    color: "#4A5568",
+  },
+
   container: {
     flex: 1,
     backgroundColor: "#F7FAFC",

@@ -250,7 +250,7 @@ export function RecommendScreen() {
             ) : (
               <View style={styles.loaderWrapper}>
                 <Sparkles size={20} color="#FFFFFF" />
-                <Text style={styles.submitButtonText}>Get AI Recommendations</Text>
+                <Text style={styles.submitButtonText}>Get Recommendations</Text>
               </View>
             )}
           </TouchableOpacity>
